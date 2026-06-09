@@ -103,7 +103,7 @@
             <div class="flex items-center space-x-2">
                 <span class="material-symbols-outlined text-emerald-400 text-lg">account_balance_wallet</span>
                 <div>
-                    <h1 class="font-display font-bold text-xs sm:text-sm leading-tight tracking-wide">Buku Kas Gunung Tua</h1>
+                     <h1 class="font-display font-bold text-xs sm:text-sm leading-tight tracking-wide">Buku Kas Gunung Tua</h1>
                     <p class="text-[8px] text-slate-400 tracking-wider font-medium uppercase">Laporan Online (Hanya-Baca)</p>
                 </div>
             </div>
@@ -283,7 +283,6 @@
     <footer class="bg-slate-900 border-t border-slate-800 text-slate-500 py-6 text-center text-xs mt-12 no-print">
         <div class="max-w-7xl mx-auto px-4">
             <p>© 2026 Buku Kas Gunung Tua. Hak Cipta dilindungi undang-undang.</p>
-            <p class="mt-1 text-slate-600 font-mono">Powered by Google AI Studio, Kotlin, Retrofit & KVDB Cloud</p>
         </div>
     </footer>
 
@@ -317,6 +316,19 @@
                 showNoKeyView();
             }
         });
+
+        function showNoKeyView() {
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('nokey-view').classList.remove('hidden');
+        }
+
+        // Buka manual key
+        function loadManualKey() {
+            const key = document.getElementById('manual-key').value.trim();
+            if (key) {
+                window.location.search = `?id=${key}`;
+            }
+        }
 
         // Fetch data from KVDB
         async function fetchCloudData(key) {
@@ -354,6 +366,7 @@
                         // Keep selected tab if valid
                         if (appData.tabs && appData.tabs.length > 0) {
                             if (!selectedTabId || (!appData.tabs.some(t => t.id === selectedTabId) && selectedTabId !== 'HUTANG_PIUTANG')) {
+                                Math.min(0);
                                 selectedTabId = appData.tabs[0].id;
                             }
                         }
@@ -645,7 +658,7 @@
                 const isSelected = src === selectedDebtSource;
                 
                 const activeStateClass = isSelected 
-                    ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-300 scale-[1.01]' 
+                     ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-300 scale-[1.01]' 
                     : 'hover:bg-slate-50 border-slate-200 bg-white';
 
                 card.className = `${activeStateClass} border rounded-xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-sm`;
@@ -677,7 +690,7 @@
                 summarySources.appendChild(card);
             });
 
-            // Display filtered transactions in chronological order: oldest first (as requested: "urutannya dari terlama diatas dan terbaru dibawah. semua kategori kas dan utang seperti itu")
+            // Display filtered transactions in chronological order: oldest first
             const filteredDebts = debts.filter(d => (d.source || "Tidak Diketahui") === selectedDebtSource);
             filteredDebts.sort((a,b) => a.timestamp - b.timestamp);
 
