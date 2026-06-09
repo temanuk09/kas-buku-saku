@@ -262,8 +262,19 @@
                         </div>
                         <div class="bg-emerald-50 rounded-xl px-4 py-2 border border-emerald-100 text-center">
                             <div class="text-[9px] uppercase font-bold text-emerald-600 tracking-wider">Sudah Lunas</div>
-                            <div id="debt-paid-count" class="font-mono text-sm font-extrabold text-emerald-750 mt-0.5">0 Lunas</div>
+                            <div id="debt-paid-count" class="font-mono text-sm font-extrabold text-emerald-700 mt-0.5">0 Lunas</div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Summary of Outstanding Balances per Source/Mitra (Sisa Utang) -->
+                <div id="debt-summary-container" class="hidden space-y-3 pb-3 border-b border-slate-100">
+                    <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5 px-0.5">
+                        <span class="material-symbols-outlined text-xs">account_balance</span>
+                        Sisa Utang Aktif per Mitra / Sumber Utang
+                    </div>
+                    <div id="debt-summary-sources" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Rendered dynamically -->
                     </div>
                 </div>
 
@@ -594,17 +605,23 @@
         function renderDebts() {
             const container = document.getElementById('debt-list');
             const emptyState = document.getElementById('debt-empty-state');
+            const summaryContainer = document.getElementById('debt-summary-container');
+            const summarySources = document.getElementById('debt-summary-sources');
+            
             container.innerHTML = '';
+            summarySources.innerHTML = '';
 
             let debts = appData.debts || [];
 
             if (debts.length === 0) {
                 emptyState.classList.remove('hidden');
                 document.getElementById('debt-count-container').classList.add('hidden');
+                summaryContainer.classList.add('hidden');
                 return;
             } else {
                 emptyState.classList.add('hidden');
                 document.getElementById('debt-count-container').classList.remove('hidden');
+                summaryContainer.classList.remove('hidden');
             }
 
             // Stats count
@@ -617,21 +634,60 @@
             const sourceBalances = {};
             const sortedChain = [...debts].sort((a, b) => a.timestamp - b.timestamp);
             const txRunningBalances = {};
+            const txShowDueDate = {};
 
             sortedChain.forEach(d => {
                 const src = d.source || "Tidak Diketahui";
-                if (!sourceBalances[src]) {
-                    sourceBalances[src] = 0;
-                }
+                const previousBalance = sourceBalances[src] || 0;
+                
                 if (d.type === 'HUTANG') {
-                    sourceBalances[src] += d.amount;
+                    if (previousBalance === 0) {
+                        txShowDueDate[d.id] = true;
+                    } else {
+                        txShowDueDate[d.id] = false;
+                    }
+                    sourceBalances[src] = previousBalance + d.amount;
                 } else {
-                    sourceBalances[src] -= d.amount;
+                    txShowDueDate[d.id] = false;
+                    sourceBalances[src] = Math.max(0, previousBalance - d.amount);
                 }
                 txRunningBalances[d.id] = sourceBalances[src];
             });
 
-            // Display in chronological order: oldest first (as requested)
+            // Render top summary of outstanding balances per Source/Mitra
+            Object.keys(sourceBalances).sort().forEach(src => {
+                const balance = sourceBalances[src];
+                const card = document.createElement('div');
+                
+                if (balance > 0) {
+                    card.className = 'bg-amber-50/50 border border-amber-200/60 rounded-xl p-3.5 flex flex-col justify-between transition-all';
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="font-extrabold text-slate-800 text-xs sm:text-sm truncate max-w-[150px]">${src}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">BELUM LUNAS</span>
+                        </div>
+                        <div class="mt-2 flex flex-col">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
+                            <span class="font-mono font-extrabold text-amber-700 text-base mt-0.5">${formatRupiah(balance)}</span>
+                        </div>
+                    `;
+                } else {
+                    card.className = 'bg-emerald-50/30 border border-emerald-100 rounded-xl p-3.5 flex flex-col justify-between transition-all';
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="font-extrabold text-slate-600 text-xs sm:text-sm truncate max-w-[150px]">${src}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">LUNAS</span>
+                        </div>
+                        <div class="mt-2 flex flex-col">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
+                            <span class="font-mono font-bold text-slate-400 text-sm mt-0.5">Rp 0 (Lunas)</span>
+                        </div>
+                    `;
+                }
+                summarySources.appendChild(card);
+            });
+
+            // Display in chronological order: oldest first (as requested: "urutannya dari terlama diatas dan terbaru dibawah. semua kategori kas dan utang seperti itu")
             debts.sort((a,b) => a.timestamp - b.timestamp);
 
             debts.forEach(d => {
@@ -647,13 +703,17 @@
                     ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-green-100 text-green-800">LUNAS</span>'
                     : '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-805 animate-pulse">BELUM LUNAS</span>';
 
-                // Calculate remaining debt for this source/mitra at this specific step
-                const stepRemaining = Math.max(0, txRunningBalances[d.id] || 0);
-
-                // Show due date ONLY if type is 'HUTANG' (Tambah Utang) to prevent confusing due dates appearing on repayments
-                const dueDateHtml = !isPiutang 
-                    ? `<div class="text-rose-600 font-bold">Jatuh Tempo: ${formatDate(d.dueDate)}</div>` 
-                    : `<div class="text-slate-400 italic">Repayment Action</div>`;
+                // Display due date ONLY if type is 'HUTANG' (Tambah Utang) AND it established a new cycle
+                let dueDateHtml = '';
+                if (!isPiutang) {
+                    if (txShowDueDate[d.id]) {
+                        dueDateHtml = `<div class="text-rose-600 font-bold">Jatuh Tempo: ${formatDate(d.dueDate)}</div>`;
+                    } else {
+                        dueDateHtml = `<div class="text-slate-400 italic">Tempo: Terikut Hutang Awal</div>`;
+                    }
+                } else {
+                    dueDateHtml = `<div class="text-emerald-600 font-medium font-bold">Lunas / Cicil Pembayaran</div>`;
+                }
 
                 item.innerHTML = `
                     <div class="flex items-center justify-between">
@@ -662,13 +722,13 @@
                     </div>
                     <h4 class="font-extrabold text-slate-800 text-sm sm:text-base leading-tight">${d.description}</h4>
                     
-                    <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-205/50">
+                    <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/50">
                         <div>
                             <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Mitra / Sumber Utang</span>
                             <span class="font-bold text-slate-700 text-xs sm:text-sm">${d.source}</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Jumlah Transaksi</span>
+                            <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider font-bold">Jumlah Transaksi</span>
                             <span class="font-mono font-extrabold text-indigo-600 text-sm sm:text-base">${formatRupiah(d.amount)}</span>
                         </div>
                     </div>
@@ -676,14 +736,6 @@
                     <div class="text-[10px] text-slate-400 flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100 gap-1">
                         <div>Tanggal Transaksi: ${formatDate(d.timestamp)}</div>
                         ${dueDateHtml}
-                    </div>
-
-                    <!-- Clean outstanding balance summary row -->
-                    <div class="p-3 rounded-xl bg-indigo-50/40 border border-indigo-100/50 mt-1">
-                        <div class="flex justify-between items-center text-xs">
-                            <span class="text-slate-500 font-medium">Sisa Utang ke ${d.source}:</span>
-                            <span class="font-mono font-extrabold text-indigo-700 text-sm">${formatRupiah(stepRemaining)}</span>
-                        </div>
                     </div>
                 `;
                 container.appendChild(item);
