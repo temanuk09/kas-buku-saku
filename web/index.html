@@ -337,13 +337,7 @@
         async function fetchCloudData(key) {
             const url = `https://kvdb.io/${bucket}/${key}?_cb=${Date.now()}`;
             try {
-                const response = await fetch(url, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
-                });
+                const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error('Gagal mengunduh data pembukuan. Periksa kembali kode database Anda.');
                 }
@@ -366,13 +360,7 @@
         async function pollCloudData(key) {
             const url = `https://kvdb.io/${bucket}/${key}?_cb=${Date.now()}`;
             try {
-                const response = await fetch(url, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache'
-                    }
-                });
+                const response = await fetch(url);
                 if (response.ok) {
                     const newData = await response.json();
                     // Detect delta changes to prevent redundant render or state reset
@@ -433,7 +421,7 @@
             }
         }
 
-        // Renders visual tabs
+        // Render Tabs
         function renderTabs() {
             const container = document.getElementById('tab-bar-container');
             container.innerHTML = '';
@@ -567,10 +555,10 @@
                 const desc = tx.description;
                 const isIncoming = tx.type === 'MASUK';
                 
-                // Calculate if recently updated (within 24 hours of DB updatedAt)
-                const dbUpdatedTime = appData.updatedAt || Date.now();
-                const isNewTx = (dbUpdatedTime - tx.timestamp) < (24 * 60 * 60 * 1000) && (dbUpdatedTime - tx.timestamp) >= 0;
-                const newBadge = isNewTx ? `<span class="absolute top-1 right-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-widest bg-indigo-600 text-white shadow-sm select-none pointer-events-none animate-pulse scale-90 whitespace-nowrap">baru</span>` : '';
+                 // Calculate if recently updated (within 24 hours of DB updatedAt)
+                 const dbUpdatedTime = appData.updatedAt || Date.now();
+                 const isNewTx = (dbUpdatedTime - tx.timestamp) < (24 * 60 * 60 * 1000) && (dbUpdatedTime - tx.timestamp) >= 0;
+                 const newBadge = isNewTx ? `<span class="absolute top-1 right-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-widest bg-indigo-600 text-white shadow-sm select-none pointer-events-none animate-pulse scale-90 whitespace-nowrap">baru</span>` : '';
 
                 // Debit and Kredit custom HTML
                 let debitHtml = '<span class="text-slate-300 font-mono">-</span>';
@@ -634,7 +622,7 @@
                 const item = document.createElement('div');
                 item.className = 'bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-2xl p-5 flex flex-col space-y-3 transition-all duration-200';
 
-                const isPiutang = d.type === 'PIUTANG'; 
+                const isPiutang = d.type === 'PIUTANG'; // we lend to someone, meaning receivables
                 const typeText = isPiutang ? 'PIUTANG (Tagihan Masuk)' : 'HUTANG (Kewajiban Bayar)';
                 const typeColor = isPiutang ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-pink-50 text-pink-700 border-pink-100';
                 
