@@ -335,9 +335,15 @@
 
         // Fetch data from KVDB
         async function fetchCloudData(key) {
-            const url = `https://kvdb.io/${bucket}/${key}`;
+            const url = `https://kvdb.io/${bucket}/${key}?_cb=${Date.now()}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 if (!response.ok) {
                     throw new Error('Gagal mengunduh data pembukuan. Periksa kembali kode database Anda.');
                 }
@@ -358,9 +364,15 @@
 
         // Silent polling to sync updates in real-time without layout flicker
         async function pollCloudData(key) {
-            const url = `https://kvdb.io/${bucket}/${key}`;
+            const url = `https://kvdb.io/${bucket}/${key}?_cb=${Date.now()}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
                 if (response.ok) {
                     const newData = await response.json();
                     // Detect delta changes to prevent redundant render or state reset
@@ -421,7 +433,7 @@
             }
         }
 
-        // Render tab headers dynamically
+        // Renders visual tabs
         function renderTabs() {
             const container = document.getElementById('tab-bar-container');
             container.innerHTML = '';
@@ -521,7 +533,7 @@
             applyFilters();
         }
 
-         function applyFilters() {
+        function applyFilters() {
             const query = document.getElementById('tx-search').value.toLowerCase().trim();
             const container = document.getElementById('tx-table-body');
             const emptyState = document.getElementById('tx-empty-state');
@@ -622,7 +634,7 @@
                 const item = document.createElement('div');
                 item.className = 'bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-2xl p-5 flex flex-col space-y-3 transition-all duration-200';
 
-                const isPiutang = d.type === 'PIUTANG'; // we lend to someone, meaning receivables
+                const isPiutang = d.type === 'PIUTANG'; 
                 const typeText = isPiutang ? 'PIUTANG (Tagihan Masuk)' : 'HUTANG (Kewajiban Bayar)';
                 const typeColor = isPiutang ? 'bg-indigo-50 text-indigo-700 border-indigo-100' : 'bg-pink-50 text-pink-700 border-pink-100';
                 
