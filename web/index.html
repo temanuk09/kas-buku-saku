@@ -98,19 +98,19 @@
 <body class="bg-slate-50 text-slate-800 min-h-screen font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
 
     <!-- Top App Bar Navigation (Hidden in Print) -->
-    <header class="bg-slate-900 text-white shadow-md border-b border-slate-800 no-print sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <span class="material-symbols-outlined text-emerald-400 text-2xl">account_balance_wallet</span>
+    <header class="bg-slate-900 text-white shadow-sm border-b border-slate-800 no-print sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="material-symbols-outlined text-emerald-400 text-lg">account_balance_wallet</span>
                 <div>
-                    <h1 class="font-display font-bold text-lg leading-tight tracking-wide">Buku Kas Gunung Tua</h1>
-                    <p class="text-[10px] text-slate-400 tracking-wider font-semibold uppercase">Laman Laporan Online (Hanya-Baca)</p>
+                    <h1 class="font-display font-bold text-xs sm:text-sm leading-tight tracking-wide">Buku Kas Gunung Tua</h1>
+                    <p class="text-[8px] text-slate-400 tracking-wider font-medium uppercase">Laporan Online (Hanya-Baca)</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-4">
-                <button onclick="window.print()" class="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-500 transition-all text-white font-medium text-xs px-4 py-2.5 rounded-lg shadow-sm border border-indigo-500/30">
-                    <span class="material-symbols-outlined text-sm">print</span>
-                    <span>Cetak Laporan / Simpan PDF</span>
+            <div class="flex items-center space-x-2">
+                <button onclick="window.print()" class="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-500 transition-all text-white font-medium text-[10px] px-2.5 py-1.5 rounded-md shadow-sm border border-indigo-500/30">
+                    <span class="material-symbols-outlined text-xs">print</span>
+                    <span>Cetak Laporan / PDF</span>
                 </button>
             </div>
         </div>
@@ -305,6 +305,7 @@
         // Global State variables
         let appData = null;
         let selectedTabId = null;
+        let selectedDebtSource = null;
         const bucket = "RfEjmENYvyNAh2yFPxePkt";
 
         // Extract key from URL params
@@ -403,6 +404,7 @@
             }).format(value);
         }
 
+        // Format Date timestamp
         function formatDate(timestamp) {
             const date = new Date(timestamp);
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -457,20 +459,20 @@
                 container.appendChild(btn);
             });
 
-            // Add standard Hutang & Piutang Tab
+            // Add standard Hutang Tab
             const debtBtn = document.createElement('button');
             debtBtn.className = `flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border text-[11px] sm:text-xs font-bold transition-all duration-200 whitespace-nowrap snap-center shrink-0 ${
                 selectedTabId === 'HUTANG_PIUTANG' 
                 ? 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-500/10 scale-[1.01] tab-btn-active' 
                 : 'bg-white border-slate-200 text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-slate-50'
             }`;
-            debtBtn.onclick = () => selectTab('HUTANG_PIUTANG', 'Hutang & Piutang');
-            debtBtn.innerHTML = `<span class="material-symbols-outlined text-base sm:text-lg">currency_exchange</span> <span class="tracking-wide">Hutang & Piutang</span>`;
+            debtBtn.onclick = () => selectTab('HUTANG_PIUTANG', 'Hutang');
+            debtBtn.innerHTML = `<span class="material-symbols-outlined text-base sm:text-lg">currency_exchange</span> <span class="tracking-wide">Hutang</span>`;
             container.appendChild(debtBtn);
 
             // Set current tab print title
             if (selectedTabId === 'HUTANG_PIUTANG') {
-                document.getElementById('print-tab-name').innerText = 'HUTANG & PIUTANG';
+                document.getElementById('print-tab-name').innerText = 'HUTANG';
             } else {
                 const activeTab = appData.tabs.find(t => t.id === selectedTabId);
                 if (activeTab) {
@@ -602,6 +604,11 @@
             });
         }
 
+        function selectDebtSource(src) {
+            selectedDebtSource = src;
+            renderDebts();
+        }
+
         function renderDebts() {
             const container = document.getElementById('debt-list');
             const emptyState = document.getElementById('debt-empty-state');
@@ -654,49 +661,67 @@
                 txRunningBalances[d.id] = sourceBalances[src];
             });
 
+            const uniqueSources = Object.keys(sourceBalances).sort();
+
+            // Auto-select first source if none is selected, or if selected source no longer exists
+            if (uniqueSources.length > 0) {
+                if (!selectedDebtSource || !uniqueSources.includes(selectedDebtSource)) {
+                    selectedDebtSource = uniqueSources[0];
+                }
+            } else {
+                selectedDebtSource = null;
+            }
+
             // Render top summary of outstanding balances per Source/Mitra
-            Object.keys(sourceBalances).sort().forEach(src => {
+            uniqueSources.forEach(src => {
                 const balance = sourceBalances[src];
                 const card = document.createElement('div');
+                const isSelected = src === selectedDebtSource;
+                
+                const activeStateClass = isSelected 
+                    ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-300 scale-[1.01]' 
+                    : 'hover:bg-slate-50 border-slate-200 bg-white';
+
+                card.className = `${activeStateClass} border rounded-xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-sm`;
+                card.onclick = () => selectDebtSource(src);
                 
                 if (balance > 0) {
-                    card.className = 'bg-amber-50/50 border border-amber-200/60 rounded-xl p-3.5 flex flex-col justify-between transition-all';
                     card.innerHTML = `
                         <div class="flex items-center justify-between gap-1">
-                            <span class="font-extrabold text-slate-800 text-xs sm:text-sm truncate max-w-[150px]">${src}</span>
+                            <span class="font-extrabold text-slate-800 text-xs sm:text-sm truncate max-w-[130px]">${src}</span>
                             <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">BELUM LUNAS</span>
                         </div>
                         <div class="mt-2 flex flex-col">
                             <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
-                            <span class="font-mono font-extrabold text-amber-700 text-base mt-0.5">${formatRupiah(balance)}</span>
+                            <span class="font-mono font-extrabold text-amber-700 text-sm sm:text-base mt-0.5">${formatRupiah(balance)}</span>
                         </div>
                     `;
                 } else {
-                    card.className = 'bg-emerald-50/30 border border-emerald-100 rounded-xl p-3.5 flex flex-col justify-between transition-all';
                     card.innerHTML = `
                         <div class="flex items-center justify-between gap-1">
-                            <span class="font-extrabold text-slate-600 text-xs sm:text-sm truncate max-w-[150px]">${src}</span>
+                            <span class="font-extrabold text-slate-505 text-xs sm:text-sm truncate max-w-[130px]">${src}</span>
                             <span class="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">LUNAS</span>
                         </div>
                         <div class="mt-2 flex flex-col">
                             <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
-                            <span class="font-mono font-bold text-slate-400 text-sm mt-0.5">Rp 0 (Lunas)</span>
+                            <span class="font-mono font-bold text-slate-400 text-xs sm:text-sm mt-0.5">Rp 0 (Lunas)</span>
                         </div>
                     `;
                 }
                 summarySources.appendChild(card);
             });
 
-            // Display in chronological order: oldest first (as requested: "urutannya dari terlama diatas dan terbaru dibawah. semua kategori kas dan utang seperti itu")
-            debts.sort((a,b) => a.timestamp - b.timestamp);
+            // Display filtered transactions in chronological order: oldest first
+            const filteredDebts = debts.filter(d => (d.source || "Tidak Diketahui") === selectedDebtSource);
+            filteredDebts.sort((a,b) => a.timestamp - b.timestamp);
 
-            debts.forEach(d => {
+            filteredDebts.forEach(d => {
                 const item = document.createElement('div');
-                item.className = 'bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-2xl p-5 flex flex-col space-y-3 transition-all duration-200';
+                item.className = 'bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-2xl p-4 flex flex-col space-y-2.5 transition-all duration-200';
 
                 const isPiutang = d.type === 'PIUTANG'; // we lend back, meaning a payment/repayment
                 const typeText = isPiutang ? 'PEMBAYARAN UTANG' : 'TAMBAH UTANG';
-                const typeColor = isPiutang ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100';
+                const typeColor = isPiutang ? 'bg-emerald-50 text-emerald-700 border-emerald-105' : 'bg-rose-50 text-rose-700 border-rose-100';
                 
                 const isLunas = d.status === 'LUNAS';
                 const statusBadge = isLunas 
@@ -705,14 +730,8 @@
 
                 // Display due date ONLY if type is 'HUTANG' (Tambah Utang) AND it established a new cycle
                 let dueDateHtml = '';
-                if (!isPiutang) {
-                    if (txShowDueDate[d.id]) {
-                        dueDateHtml = `<div class="text-rose-600 font-bold">Jatuh Tempo: ${formatDate(d.dueDate)}</div>`;
-                    } else {
-                        dueDateHtml = `<div class="text-slate-400 italic">Tempo: Terikut Hutang Awal</div>`;
-                    }
-                } else {
-                    dueDateHtml = `<div class="text-emerald-600 font-medium font-bold">Lunas / Cicil Pembayaran</div>`;
+                if (!isPiutang && txShowDueDate[d.id]) {
+                    dueDateHtml = `<div class="text-rose-600 font-bold">Jatuh Tempo: ${formatDate(d.dueDate)}</div>`;
                 }
 
                 item.innerHTML = `
@@ -722,15 +741,9 @@
                     </div>
                     <h4 class="font-extrabold text-slate-800 text-sm sm:text-base leading-tight">${d.description}</h4>
                     
-                    <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/50">
-                        <div>
-                            <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider">Mitra / Sumber Utang</span>
-                            <span class="font-bold text-slate-700 text-xs sm:text-sm">${d.source}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-slate-400 block text-[9px] uppercase font-bold tracking-wider font-bold">Jumlah Transaksi</span>
-                            <span class="font-mono font-extrabold text-indigo-600 text-sm sm:text-base">${formatRupiah(d.amount)}</span>
-                        </div>
+                    <div class="flex justify-between items-baseline pt-2 border-t border-slate-200/50">
+                        <span class="text-slate-400 text-[9px] uppercase font-bold tracking-wider">Jumlah Transaksi</span>
+                        <span class="font-mono font-extrabold text-indigo-600 text-base sm:text-lg">${formatRupiah(d.amount)}</span>
                     </div>
 
                     <div class="text-[10px] text-slate-400 flex justify-between items-center bg-white p-2.5 rounded-xl border border-slate-100 gap-1">
