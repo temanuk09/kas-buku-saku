@@ -145,10 +145,10 @@
         </div>
 
         <!-- Main Content (Renders only if key is valid) -->
-        <div id="content-view" class="hidden w-full flex flex-col space-y-6">
+        <div id="content-view" class="hidden w-full flex flex-col space-y-3.5">
             
-            <!-- Sleek Top Header & Status -->
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-200/80 print-card gap-3">
+            <!-- Sleek Top Header & Status (Visible only in Print to avoid on-screen redundancy) -->
+            <div class="hidden print:flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-slate-200/80 print-card gap-3">
                 <div class="space-y-1">
                     <div class="flex items-center space-x-2.5">
                         <span class="flex h-2.5 w-2.5 relative no-print">
@@ -171,18 +171,18 @@
             </div>
 
             <!-- Dynamic Tab Bar Categories Navigation (Now direct on top) -->
-            <div class="no-print space-y-2">
+            <div class="no-print space-y-1">
                 <div class="flex items-center space-x-2 text-slate-400 px-1">
                     <span class="material-symbols-outlined text-sm">grid_view</span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider">Kategori Buku Kas</span>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Kategori Buku Kas</span>
                 </div>
-                <div id="tab-bar-container" class="flex flex-nowrap overflow-x-auto gap-2 pb-2 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
+                <div id="tab-bar-container" class="flex flex-nowrap overflow-x-auto gap-2 pb-1.5 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
                     <!-- Tabs rendered dynamically -->
                 </div>
             </div>
 
             <!-- Single Balance Card (Unbreakable & Styled) -->
-            <div id="saldo-box-container" class="bg-white rounded-2xl shadow-sm border border-indigo-100 bg-gradient-to-r from-indigo-50/30 to-slate-50/20 p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 print-card">
+            <div id="saldo-box-container" class="bg-white rounded-2xl shadow-sm border border-indigo-100 bg-gradient-to-r from-indigo-50/30 to-slate-50/20 p-5 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4 print-card">
                 <div class="flex items-center space-x-4">
                     <div class="bg-indigo-600 text-white p-3.5 rounded-xl shadow-md shadow-indigo-600/20">
                         <span class="material-symbols-outlined text-3xl">account_balance_wallet</span>
@@ -198,8 +198,8 @@
                 </div>
             </div>
 
-            <!-- TRANSACTIONS PANEL (Full Width Grid Area) -->
-            <div id="transactions-panel" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col print-card animate-fade-in">
+            <!-- TRANSACTIONS PANEL (Full Width Grid Area, edge-to-edge on mobile) -->
+            <div id="transactions-panel" class="bg-white rounded-none sm:rounded-2xl shadow-sm border-y sm:border border-slate-200/80 -mx-4 sm:mx-0 overflow-hidden flex flex-col print-card animate-fade-in">
                 
                 <!-- Table Header & Live Search (Hidden search in print) -->
                 <div class="p-5 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 no-print">
@@ -222,18 +222,18 @@
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-50 border-b border-slate-100 text-[9px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider text-slate-500">
-                                <th class="px-2 sm:px-5 py-2.5 sm:py-3.5 w-8 sm:w-16 text-center">No</th>
-                                <th class="px-2 sm:px-4 py-2.5 sm:py-3.5">Keterangan / Deskripsi</th>
-                                <th class="px-2 sm:px-4 py-2.5 sm:py-3.5 w-24 sm:w-40 text-right text-emerald-700 font-bold uppercase tracking-wider">
+                            <tr class="bg-slate-50 border-b border-slate-100 text-[8.5px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-widest text-slate-500">
+                                <th class="px-1.5 sm:px-5 py-2 sm:py-3.5 w-6 sm:w-16 text-center">No</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3.5">Keterangan / Deskripsi</th>
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3.5 w-20 sm:w-40 text-right text-emerald-700 font-extrabold uppercase">
                                     <span class="sm:inline hidden">Kas Masuk (Debit)</span>
-                                    <span class="sm:hidden inline">Masuk (+)</span>
+                                    <span class="sm:hidden inline">Masuk</span>
                                 </th>
-                                <th class="px-2 sm:px-4 py-2.5 sm:py-3.5 w-24 sm:w-40 text-right text-rose-700 font-bold uppercase tracking-wider">
+                                <th class="px-1.5 sm:px-4 py-2 sm:py-3.5 w-20 sm:w-40 text-right text-rose-700 font-extrabold uppercase">
                                     <span class="sm:inline hidden">Kas Keluar (Kredit)</span>
-                                    <span class="sm:hidden inline">Keluar (-)</span>
+                                    <span class="sm:hidden inline">Keluar</span>
                                 </th>
-                                <th class="px-2 sm:px-5 py-2.5 sm:py-3.5 w-24 sm:w-44 text-right">
+                                <th class="px-1.5 sm:px-5 py-2 sm:py-3.5 w-20 sm:w-44 text-right text-slate-700 font-bold uppercase">
                                     <span class="sm:inline hidden">Saldo Buku</span>
                                     <span class="sm:hidden inline">Saldo</span>
                                 </th>
@@ -312,6 +312,10 @@
             if (id) {
                 document.getElementById('db-id').innerText = id;
                 fetchCloudData(id);
+                // Set up real-time sync polling every 4 seconds
+                setInterval(() => {
+                    pollCloudData(id);
+                }, 4000);
             } else {
                 showNoKeyView();
             }
@@ -352,6 +356,35 @@
             }
         }
 
+        // Silent polling to sync updates in real-time without layout flicker
+        async function pollCloudData(key) {
+            const url = `https://kvdb.io/${bucket}/${key}`;
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    const newData = await response.json();
+                    // Detect delta changes to prevent redundant render or state reset
+                    if (!appData || JSON.stringify(newData) !== JSON.stringify(appData)) {
+                        appData = newData;
+                        // Keep selected tab if valid
+                        if (appData.tabs && appData.tabs.length > 0) {
+                            if (!selectedTabId || (!appData.tabs.some(t => t.id === selectedTabId) && selectedTabId !== 'HUTANG_PIUTANG')) {
+                                selectedTabId = appData.tabs[0].id;
+                            }
+                        }
+                        renderTabs();
+                        if (selectedTabId === 'HUTANG_PIUTANG') {
+                            renderDebts();
+                        } else {
+                            renderSummariesAndRecords();
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Real-time sync failed:', err);
+            }
+        }
+
         function formatRupiah(value) {
             return new Intl.NumberFormat('id-ID', {
                 style: 'currency',
@@ -388,6 +421,7 @@
             }
         }
 
+        // Render tab headers dynamically
         function renderTabs() {
             const container = document.getElementById('tab-bar-container');
             container.innerHTML = '';
@@ -487,7 +521,7 @@
             applyFilters();
         }
 
-        function applyFilters() {
+         function applyFilters() {
             const query = document.getElementById('tx-search').value.toLowerCase().trim();
             const container = document.getElementById('tx-table-body');
             const emptyState = document.getElementById('tx-empty-state');
@@ -524,37 +558,37 @@
                 // Calculate if recently updated (within 24 hours of DB updatedAt)
                 const dbUpdatedTime = appData.updatedAt || Date.now();
                 const isNewTx = (dbUpdatedTime - tx.timestamp) < (24 * 60 * 60 * 1000) && (dbUpdatedTime - tx.timestamp) >= 0;
-                const newBadge = isNewTx ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[7.5px] font-bold uppercase tracking-normal bg-indigo-50 text-indigo-500 border border-indigo-100/50 shadow-sm leading-none align-middle select-none shrink-0 scale-95" style="align-self: center;">baru</span>` : '';
+                const newBadge = isNewTx ? `<span class="absolute top-1 right-1.5 inline-flex items-center px-1.5 py-0.5 rounded text-[7px] font-extrabold uppercase tracking-widest bg-indigo-600 text-white shadow-sm select-none pointer-events-none animate-pulse scale-90 whitespace-nowrap">baru</span>` : '';
 
                 // Debit and Kredit custom HTML
                 let debitHtml = '<span class="text-slate-300 font-mono">-</span>';
                 let kreditHtml = '<span class="text-slate-300 font-mono">-</span>';
                 
                 if (isIncoming) {
-                    debitHtml = `<span class="text-emerald-600 font-extrabold">+ ${formatRupiah(tx.amount)}</span>`;
+                    debitHtml = `<span class="text-emerald-700 font-extrabold">${formatRupiah(tx.amount)}</span>`;
                 } else {
-                    kreditHtml = `<span class="text-rose-600 font-extrabold">- ${formatRupiah(tx.amount)}</span>`;
+                    kreditHtml = `<span class="text-rose-700 font-extrabold">${formatRupiah(tx.amount)}</span>`;
                 }
 
                 const balance = formatRupiah(tx.runningBalance);
 
                 tr.innerHTML = `
-                    <td class="px-2 sm:px-5 py-2.5 sm:py-4 text-center text-slate-400 font-mono font-bold text-[10px] sm:text-xs">${number}</td>
-                    <td class="px-2 sm:px-4 py-2.5 sm:py-4">
-                        <div class="flex flex-col space-y-0.5 sm:space-y-1">
-                            <div class="flex items-center flex-wrap gap-1.5 leading-snug">
-                                <span class="font-extrabold text-slate-800 text-[11px] sm:text-[13px]">${desc}</span>
-                                ${newBadge}
+                    <td class="px-1.5 sm:px-5 py-2 sm:py-3.5 text-center text-slate-400 font-mono font-medium text-[9px] sm:text-xs">${number}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-3.5 relative">
+                        <div class="flex flex-col space-y-0.5 pr-8">
+                            <div class="flex items-center flex-wrap gap-1 leading-tight">
+                                <span class="font-extrabold text-slate-800 text-[10.5px] sm:text-[13px]">${desc}</span>
                             </div>
-                            <div class="text-[9px] sm:text-[10px] text-slate-400 font-semibold flex items-center space-x-1 uppercase tracking-wider">
-                                <span class="material-symbols-outlined text-[10px] sm:text-[12px] text-slate-400">calendar_today</span>
+                            <div class="text-[8.5px] sm:text-[10px] text-slate-400 font-bold flex items-center gap-1 uppercase tracking-wider leading-none mt-0.5">
+                                <span class="material-symbols-outlined text-[9px] sm:text-[12px] text-slate-400">calendar_today</span>
                                 <span>${date}</span>
                             </div>
                         </div>
+                        ${newBadge}
                     </td>
-                    <td class="px-2 sm:px-4 py-2.5 sm:py-4 text-right font-mono text-[11px] sm:text-sm">${debitHtml}</td>
-                    <td class="px-2 sm:px-4 py-2.5 sm:py-4 text-right font-mono text-[11px] sm:text-sm">${kreditHtml}</td>
-                    <td class="px-2 sm:px-5 py-2.5 sm:py-4 text-right font-mono text-slate-700 font-extrabold text-[11px] sm:text-sm">${balance}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-3.5 text-right font-mono text-[10.5px] sm:text-sm">${debitHtml}</td>
+                    <td class="px-1.5 sm:px-4 py-2 sm:py-3.5 text-right font-mono text-[10.5px] sm:text-sm">${kreditHtml}</td>
+                    <td class="px-1.5 sm:px-5 py-2 sm:py-3.5 text-right font-mono text-slate-700 font-extrabold text-[10.5px] sm:text-sm">${balance}</td>
                 `;
                 container.appendChild(tr);
             });
