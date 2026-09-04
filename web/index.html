@@ -703,6 +703,16 @@
 
                 const balance = formatRupiah(tx.runningBalance);
 
+                // Holder badge: icon dompet + nama pemegang kas. Hijau jika MASUK, Kemerahan jika KELUAR
+                let holderBadge = '';
+                if (tx.holderName) {
+                    if (isIncoming) {
+                        holderBadge = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold text-[8px] sm:text-[9.5px] leading-none tracking-normal"><span class="material-symbols-outlined text-[10px] sm:text-[12px] text-emerald-600">account_balance_wallet</span><span class="capitalize">${tx.holderName}</span></span>`;
+                    } else {
+                        holderBadge = `<span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200/80 font-bold text-[8px] sm:text-[9.5px] leading-none tracking-normal"><span class="material-symbols-outlined text-[10px] sm:text-[12px] text-rose-600">account_balance_wallet</span><span class="capitalize">${tx.holderName}</span></span>`;
+                    }
+                }
+
                 tr.innerHTML = `
                     <td class="px-1.5 sm:px-5 py-2 sm:py-3.5 text-center text-slate-400 font-mono font-medium text-[9px] sm:text-xs">${number}</td>
                     <td class="px-1.5 sm:px-4 py-2 sm:py-3.5 relative">
@@ -710,10 +720,10 @@
                             <div class="flex items-center flex-wrap gap-1 leading-tight">
                                 <span class="font-extrabold text-slate-800 text-[10.5px] sm:text-[13px]">${desc}</span>
                             </div>
-                            <div class="text-[8.5px] sm:text-[10px] text-slate-400 font-bold flex items-center flex-wrap gap-1 uppercase tracking-wider leading-none mt-0.5">
+                            <div class="text-[8.5px] sm:text-[10px] text-slate-400 font-bold flex items-center flex-wrap gap-1.5 uppercase tracking-wider leading-none mt-0.5">
                                 <span class="material-symbols-outlined text-[9px] sm:text-[12px] text-slate-400">calendar_today</span>
                                 <span>${date}</span>
-                                ${tx.holderName ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[8px] sm:text-[9.5px] lowercase tracking-normal"><span class="material-symbols-outlined text-[9px] sm:text-[11px] text-slate-500">person</span>di tangan: <b class="capitalize text-slate-700">${tx.holderName}</b></span>` : ''}
+                                ${holderBadge}
                             </div>
                         </div>
                         ${newBadge}
