@@ -311,11 +311,16 @@
                 </div>
             </div>
 
-            <!-- DEBTS PANEL (Full Width when Active, grouped per person/mitra) -->
-            <div id="debts-panel" class="hidden space-y-4 print-card">
-                <!-- Grouped list per Mitra / Sumber with embedded compact transactions -->
-                <div id="debt-list" class="space-y-4 sm:space-y-5">
-                    <!-- Debts rendered dynamically per mitra -->
+            <!-- DEBTS PANEL (Full Width when Active, sub-tabbed per partner) -->
+            <div id="debts-panel" class="hidden space-y-3.5 print-card">
+                <!-- Sub Tabs untuk Mitra (muncul jika mitra > 1) -->
+                <div id="debt-partner-tabs" class="hidden flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <!-- Active Partner Container -->
+                <div id="debt-active-partner-content" class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <!-- Rendered dynamically -->
                 </div>
 
                 <div id="debt-empty-state" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 py-16 text-center">
@@ -340,6 +345,7 @@
         // Global State variables
         let appData = null;
         let selectedTabId = null;
+        let activeDebtPartner = null;
         const bucket = "RfEjmENYvyNAh2yFPxePkt";
 
         // Extract key from URL params
@@ -668,10 +674,12 @@
         }
 
         function renderDebts() {
-            const container = document.getElementById('debt-list');
+            const partnerTabsContainer = document.getElementById('debt-partner-tabs');
+            const activePartnerContainer = document.getElementById('debt-active-partner-content');
             const emptyState = document.getElementById('debt-empty-state');
             
-            container.innerHTML = '';
+            partnerTabsContainer.innerHTML = '';
+            activePartnerContainer.innerHTML = '';
 
             const debts = appData.debts || [];
 
@@ -690,10 +698,13 @@
 
             if (debts.length === 0) {
                 emptyState.classList.remove('hidden');
+                partnerTabsContainer.classList.add('hidden');
+                activePartnerContainer.classList.add('hidden');
                 summaryBalance.innerText = 'Rp 0';
                 return;
             } else {
                 emptyState.classList.add('hidden');
+                activePartnerContainer.classList.remove('hidden');
             }
 
             // Group all debts by partner / source (e.g. "siwas")
@@ -760,102 +771,141 @@
                 return b.currentBalance - a.currentBalance;
             });
 
-            // Render each partner panel directly
-            partnerSummaries.forEach(partner => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all duration-150';
+            window.currentDebtPartnerSummaries = partnerSummaries;
 
-                // Partner Header
-                const initial = partner.name.charAt(0).toUpperCase();
-                const partnerHeader = document.createElement('div');
-                partnerHeader.className = 'p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border-b border-slate-100';
+            // Auto-select active partner if not set or invalid
+            const partnerNames = partnerSummaries.map(p => p.name);
+            if (!activeDebtPartner || !partnerNames.includes(activeDebtPartner)) {
+                activeDebtPartner = partnerSummaries[0].name;
+            }
 
-                const statusBadgeMitra = partner.isLunas
-                    ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1"><span class="material-symbols-outlined text-[11px] font-bold">check_circle</span> LUNAS</span>'
-                    : '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">BELUM LUNAS</span>';
+            // Render Horizontal Sub Tabs if more than 1 partner
+            if (partnerSummaries.length > 1) {
+                partnerTabsContainer.classList.remove('hidden');
+                partnerSummaries.forEach(partner => {
+                    const isSelected = partner.name === activeDebtPartner;
+                    const tabBtn = document.createElement('button');
+                    tabBtn.type = 'button';
+                    tabBtn.onclick = () => {
+                        activeDebtPartner = partner.name;
+                        renderDebts();
+                    };
 
-                partnerHeader.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0 ${partner.isLunas ? 'bg-emerald-600' : 'bg-rose-600'}">
-                            ${initial}
-                        </div>
-                        <div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-extrabold text-slate-800 text-base sm:text-lg">${partner.name}</h3>
-                                ${statusBadgeMitra}
-                            </div>
-                            <p class="text-[11px] text-slate-400 font-medium mt-0.5">${partner.transactions.length} Riwayat Transaksi</p>
-                        </div>
+                    const activeClass = isSelected
+                        ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/25 ring-2 ring-rose-500'
+                        : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200';
+
+                    const statusDot = partner.isLunas
+                        ? '<span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>'
+                        : '<span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>';
+
+                    tabBtn.className = `px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all duration-150 shrink-0 ${activeClass}`;
+                    tabBtn.innerHTML = `
+                        ${statusDot}
+                        <span>${partner.name}</span>
+                        <span class="text-[10px] opacity-80 font-mono">${partner.isLunas ? 'Lunas' : formatRupiah(partner.currentBalance)}</span>
+                    `;
+                    partnerTabsContainer.appendChild(tabBtn);
+                });
+            } else {
+                partnerTabsContainer.classList.add('hidden');
+            }
+
+            // Render active partner panel content
+            renderActiveDebtPartner();
+        }
+
+        function renderActiveDebtPartner() {
+            const container = document.getElementById('debt-active-partner-content');
+            if (!container || !window.currentDebtPartnerSummaries) return;
+            container.innerHTML = '';
+
+            const partner = window.currentDebtPartnerSummaries.find(p => p.name === activeDebtPartner) || window.currentDebtPartnerSummaries[0];
+            if (!partner) return;
+
+            // Header: Name on left, "Sisa Utang Aktif" aligned on right
+            const initial = partner.name.charAt(0).toUpperCase();
+            const statusBadgeMitra = partner.isLunas
+                ? '<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5"><span class="material-symbols-outlined text-[11px] font-bold">check_circle</span> LUNAS</span>'
+                : '<span class="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">BELUM LUNAS</span>';
+
+            const partnerHeader = document.createElement('div');
+            partnerHeader.className = 'px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between gap-3 bg-slate-50/70 border-b border-slate-200';
+            partnerHeader.innerHTML = `
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs text-white shrink-0 ${partner.isLunas ? 'bg-emerald-600' : 'bg-rose-600'}">
+                        ${initial}
                     </div>
-                    <div class="flex flex-col sm:items-end bg-slate-50 sm:bg-transparent p-2.5 sm:p-0 rounded-xl">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
-                        <span class="font-mono font-extrabold text-base sm:text-lg ${partner.isLunas ? 'text-emerald-600' : 'text-rose-600'}">
-                            ${partner.isLunas ? 'Rp 0 (Lunas)' : formatRupiah(partner.currentBalance)}
-                        </span>
+                    <div class="flex items-center gap-2 flex-wrap min-w-0">
+                        <h3 class="font-extrabold text-slate-800 text-sm sm:text-base truncate">${partner.name}</h3>
+                        ${statusBadgeMitra}
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 sm:gap-2 shrink-0 text-right">
+                    <span class="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">Sisa Utang:</span>
+                    <span class="font-mono font-extrabold text-sm sm:text-base ${partner.isLunas ? 'text-emerald-600' : 'text-rose-600'}">
+                        ${partner.isLunas ? 'Rp 0 (Lunas)' : formatRupiah(partner.currentBalance)}
+                    </span>
+                </div>
+            `;
+            container.appendChild(partnerHeader);
+
+            // Transaction list separated by divider lines (NO outer boxes/panels)
+            const txListContainer = document.createElement('div');
+            txListContainer.className = 'divide-y divide-slate-100 px-4 sm:px-6';
+
+            const totalTxs = partner.transactions.length;
+
+            partner.transactions.forEach((tx, index) => {
+                const isPiutang = tx.type === 'PIUTANG'; // Repayment
+                const typeText = isPiutang ? 'BAYAR UTANG' : 'TAMBAH UTANG';
+                const typeColor = isPiutang 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    : 'bg-rose-50 text-rose-700 border-rose-200';
+                const amountColor = isPiutang ? 'text-emerald-600' : 'text-rose-600';
+
+                // Rule for bubble status:
+                // If partner is currently LUNAS, ONLY the latest/last transaction has green "LUNAS" badge.
+                // All earlier transactions keep the yellow "BELUM LUNAS" badge.
+                // If partner is NOT lunas, all transactions have yellow "BELUM LUNAS" badge.
+                const isLastTx = (index === totalTxs - 1);
+                const txStatusBadge = (partner.isLunas && isLastTx)
+                    ? '<span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5"><span class="material-symbols-outlined text-[10px] font-bold">check_circle</span> LUNAS</span>'
+                    : '<span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">BELUM LUNAS</span>';
+
+                let dueDateHtml = '';
+                if (!isPiutang && tx.showDueDate && tx.dueDate) {
+                    dueDateHtml = `<span class="text-[9px] text-rose-600 font-bold inline-flex items-center gap-0.5"><span class="material-symbols-outlined text-[10px]">calendar_month</span>Jatuh Tempo: ${formatDate(tx.dueDate)}</span>`;
+                }
+
+                const txItem = document.createElement('div');
+                txItem.className = 'py-3 sm:py-3.5 flex flex-col space-y-1.5 transition-all';
+                txItem.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${typeColor}">${typeText}</span>
+                            ${txStatusBadge}
+                            ${dueDateHtml}
+                        </div>
+                        <span class="text-[10px] text-slate-400 font-medium">${formatDate(tx.timestamp)}</span>
+                    </div>
+
+                    <div class="flex items-start justify-between gap-3">
+                        <p class="font-semibold text-slate-800 text-xs sm:text-sm leading-snug">${tx.description}</p>
+                        <div class="text-right shrink-0">
+                            <span class="font-mono font-extrabold ${amountColor} text-xs sm:text-sm">
+                                ${isPiutang ? '-' : '+'}${formatRupiah(tx.amount)}
+                            </span>
+                            <div class="text-[9px] text-slate-400 font-mono">
+                                Sisa: ${formatRupiah(tx.runningAfter)}
+                            </div>
+                        </div>
                     </div>
                 `;
-                card.appendChild(partnerHeader);
-
-                // Embedded Compact Child Transactions Container
-                const txListContainer = document.createElement('div');
-                txListContainer.className = 'bg-slate-50/70 p-3 sm:p-4 space-y-2';
-
-                const totalTxs = partner.transactions.length;
-
-                partner.transactions.forEach((tx, index) => {
-                    const isPiutang = tx.type === 'PIUTANG'; // Repayment
-                    const typeText = isPiutang ? 'BAYAR UTANG' : 'TAMBAH UTANG';
-                    const typeColor = isPiutang 
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
-                        : 'bg-rose-50 text-rose-700 border-rose-200';
-                    const amountColor = isPiutang ? 'text-emerald-600' : 'text-rose-600';
-
-                    // Rule for bubble status:
-                    // If partner is currently LUNAS, ONLY the latest/last transaction has green "LUNAS" badge.
-                    // All earlier transactions keep the yellow "BELUM LUNAS" badge.
-                    // If partner is NOT lunas, all transactions have yellow "BELUM LUNAS" badge.
-                    const isLastTx = (index === totalTxs - 1);
-                    const txStatusBadge = (partner.isLunas && isLastTx)
-                        ? '<span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-0.5"><span class="material-symbols-outlined text-[10px] font-bold">check_circle</span> LUNAS</span>'
-                        : '<span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200">BELUM LUNAS</span>';
-
-                    let dueDateHtml = '';
-                    if (!isPiutang && tx.showDueDate && tx.dueDate) {
-                        dueDateHtml = `<div class="text-[9px] text-rose-600 font-bold mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-[10px]">calendar_month</span>Jatuh Tempo: ${formatDate(tx.dueDate)}</div>`;
-                    }
-
-                    const txItem = document.createElement('div');
-                    txItem.className = 'bg-white rounded-xl p-3 border border-slate-200/80 shadow-2xs flex flex-col space-y-1.5 transition-all';
-                    txItem.innerHTML = `
-                        <div class="flex items-center justify-between gap-2 flex-wrap">
-                            <div class="flex items-center gap-1.5 flex-wrap">
-                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${typeColor}">${typeText}</span>
-                                ${txStatusBadge}
-                            </div>
-                            <span class="text-[10px] text-slate-400 font-bold">${formatDate(tx.timestamp)}</span>
-                        </div>
-
-                        <div class="flex items-start justify-between gap-3 pt-0.5">
-                            <div class="flex flex-col">
-                                <p class="font-bold text-slate-700 text-xs leading-snug">${tx.description}</p>
-                                ${dueDateHtml}
-                            </div>
-                            <div class="text-right shrink-0">
-                                <span class="font-mono font-extrabold ${amountColor} text-xs sm:text-sm">
-                                    ${isPiutang ? '-' : '+'}${formatRupiah(tx.amount)}
-                                </span>
-                                <div class="text-[9px] text-slate-400 font-mono mt-0.5">
-                                    Sisa: ${formatRupiah(tx.runningAfter)}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    txListContainer.appendChild(txItem);
-                });
-
-                card.appendChild(txListContainer);
-                container.appendChild(card);
+                txListContainer.appendChild(txItem);
             });
+
+            container.appendChild(txListContainer);
         }
 
         // Scroll event listener to shrink/expand saldo card smoothly
