@@ -457,13 +457,11 @@
 
             // Get first tab default
             if (appData.tabs && appData.tabs.length > 0) {
-                selectedTabId = appData.tabs[0].id;
+                const initialTab = appData.tabs[0];
                 if (window.history && window.history.replaceState) {
-                    window.history.replaceState({ tabId: selectedTabId, tabName: appData.tabs[0].name }, '');
+                    window.history.replaceState({ tabId: initialTab.id, tabName: initialTab.name }, '');
                 }
-                renderTabs();
-                renderSummariesAndRecords();
-                renderDebts();
+                selectTab(initialTab.id, initialTab.name, false);
             } else {
                 // If tabs are missing or empty
                 document.getElementById('tab-bar-container').innerHTML = '<p class="text-xs text-slate-400">Tidak ada kategori tab yang tersedia.</p>';
