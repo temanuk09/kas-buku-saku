@@ -565,6 +565,9 @@
             // Keep saldo-box-container ALWAYS visible so header area never disappears
             document.getElementById('saldo-box-container').classList.remove('hidden');
 
+            // Immediately reset scroll to top so user sees all header info and subtabs clearly
+            window.scrollTo(0, 0);
+
             if (id === 'HUTANG_PIUTANG') {
                 document.getElementById('transactions-panel').classList.add('hidden');
                 document.getElementById('debts-panel').classList.remove('hidden');
@@ -579,8 +582,13 @@
                 document.getElementById('transactions-panel').classList.remove('hidden');
                 document.getElementById('debts-panel').classList.add('hidden');
                 document.getElementById('holders-panel').classList.add('hidden');
-                renderSummariesAndRecords();
+                renderSummariesAndRecords(false);
             }
+
+            // Ensure scroll is at top after DOM renders
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 10);
 
             // Push history state so device/browser back button returns to previous tab instead of closing web
             if (pushHistory && window.history && window.history.pushState) {
@@ -704,16 +712,6 @@
                 `;
                 container.appendChild(tr);
             });
-
-            // Auto-scroll directly to the newest transaction (bottom) on tab change / initial load
-            if (shouldScroll && filtered.length > 0) {
-                setTimeout(() => {
-                    const rows = container.getElementsByTagName('tr');
-                    if (rows.length > 0) {
-                        rows[rows.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
-                    }
-                }, 100);
-            }
         }
 
         function renderDebts() {
@@ -842,11 +840,10 @@
                         ? '<span class="w-2 h-2 rounded-full bg-emerald-400 inline-block"></span>'
                         : '<span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>';
 
-                    tabBtn.className = `px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all duration-150 shrink-0 ${activeClass}`;
+                    tabBtn.className = `px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 whitespace-nowrap transition-all duration-150 shrink-0 ${activeClass}`;
                     tabBtn.innerHTML = `
                         ${statusDot}
-                        <span>${partner.name}</span>
-                        <span class="text-[10px] opacity-80 font-mono">${partner.isLunas ? 'Lunas' : formatRupiah(partner.currentBalance)}</span>
+                        <span class="capitalize">${partner.name}</span>
                     `;
                     partnerTabsContainer.appendChild(tabBtn);
                 });
@@ -1116,12 +1113,10 @@
                         ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/25 ring-2 ring-sky-500'
                         : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200';
 
-                    tabBtn.className = `px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all duration-150 shrink-0 ${activeClass}`;
+                    tabBtn.className = `px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 whitespace-nowrap transition-all duration-150 shrink-0 ${activeClass}`;
                     tabBtn.innerHTML = `
                         <span class="material-symbols-outlined text-base">person</span>
-                        <span>${item.holder.name}</span>
-                        ${item.holder.isDefault ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-black uppercase">Utama</span>' : ''}
-                        <span class="text-[10px] opacity-90 font-mono">${formatRupiah(item.totalBalance)}</span>
+                        <span class="capitalize">${item.holder.name}</span>
                     `;
                     holderTabsContainer.appendChild(tabBtn);
                 });
