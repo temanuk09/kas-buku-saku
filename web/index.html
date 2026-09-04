@@ -329,6 +329,24 @@
                 </div>
             </div>
 
+            <!-- HOLDERS PANEL (Full Width when Active, sub-tabbed per cash holder) -->
+            <div id="holders-panel" class="hidden space-y-3.5 print-card">
+                <!-- Sub Tabs untuk Pemegang Kas (horizontal snap) -->
+                <div id="holder-tabs" class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <!-- Active Holder Detail & History Container -->
+                <div id="holder-active-content" class="space-y-3.5">
+                    <!-- Rendered dynamically -->
+                </div>
+
+                <div id="holder-empty-state" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 py-16 text-center">
+                    <span class="material-symbols-outlined text-slate-300 text-5xl">person_off</span>
+                    <p class="text-sm font-semibold text-slate-500 mt-2">Belum ada data pemegang kas yang dicatat.</p>
+                </div>
+            </div>
+
         </div>
 
     </main>
@@ -346,6 +364,7 @@
         let appData = null;
         let selectedTabId = null;
         let activeDebtPartner = null;
+        let activeHolderName = null;
         const bucket = "RfEjmENYvyNAh2yFPxePkt";
 
         // Extract key from URL params
@@ -420,13 +439,15 @@
                         appData = newData;
                         // Keep selected tab if valid
                         if (appData.tabs && appData.tabs.length > 0) {
-                            if (!selectedTabId || (!appData.tabs.some(t => t.id === selectedTabId) && selectedTabId !== 'HUTANG_PIUTANG')) {
+                            if (!selectedTabId || (!appData.tabs.some(t => t.id === selectedTabId) && selectedTabId !== 'HUTANG_PIUTANG' && selectedTabId !== 'PEMEGANG_KAS')) {
                                 selectedTabId = appData.tabs[0].id;
                             }
                         }
                         renderTabs();
                         if (selectedTabId === 'HUTANG_PIUTANG') {
                             renderDebts();
+                        } else if (selectedTabId === 'PEMEGANG_KAS') {
+                            renderHolders();
                         } else {
                             renderSummariesAndRecords();
                         }
@@ -512,9 +533,22 @@
             debtBtn.innerHTML = `<span class="material-symbols-outlined text-base sm:text-lg">currency_exchange</span> <span class="tracking-wide">Hutang</span>`;
             container.appendChild(debtBtn);
 
+            // Add Pemegang Kas Tab
+            const holderBtn = document.createElement('button');
+            holderBtn.className = `flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border text-[11px] sm:text-xs font-bold transition-all duration-200 whitespace-nowrap snap-center shrink-0 ${
+                selectedTabId === 'PEMEGANG_KAS' 
+                ? 'bg-sky-600 border-sky-600 text-white shadow-md shadow-sky-500/10 scale-[1.01] tab-btn-active' 
+                : 'bg-white border-slate-200 text-slate-600 hover:text-sky-600 hover:border-sky-300 hover:bg-slate-50'
+            }`;
+            holderBtn.onclick = () => selectTab('PEMEGANG_KAS', 'Pemegang Kas');
+            holderBtn.innerHTML = `<span class="material-symbols-outlined text-base sm:text-lg">account_balance_wallet</span> <span class="tracking-wide">Pemegang Kas</span>`;
+            container.appendChild(holderBtn);
+
             // Set current tab print title
             if (selectedTabId === 'HUTANG_PIUTANG') {
                 document.getElementById('print-tab-name').innerText = 'HUTANG';
+            } else if (selectedTabId === 'PEMEGANG_KAS') {
+                document.getElementById('print-tab-name').innerText = 'PEMEGANG KAS';
             } else {
                 const activeTab = appData.tabs.find(t => t.id === selectedTabId);
                 if (activeTab) {
@@ -534,10 +568,17 @@
             if (id === 'HUTANG_PIUTANG') {
                 document.getElementById('transactions-panel').classList.add('hidden');
                 document.getElementById('debts-panel').classList.remove('hidden');
+                document.getElementById('holders-panel').classList.add('hidden');
                 renderDebts();
+            } else if (id === 'PEMEGANG_KAS') {
+                document.getElementById('transactions-panel').classList.add('hidden');
+                document.getElementById('debts-panel').classList.add('hidden');
+                document.getElementById('holders-panel').classList.remove('hidden');
+                renderHolders();
             } else {
                 document.getElementById('transactions-panel').classList.remove('hidden');
                 document.getElementById('debts-panel').classList.add('hidden');
+                document.getElementById('holders-panel').classList.add('hidden');
                 renderSummariesAndRecords();
             }
 
@@ -602,7 +643,8 @@
             if (query) {
                 filtered = filtered.filter(tx => 
                     tx.description.toLowerCase().includes(query) || 
-                    String(tx.amount).includes(query)
+                    String(tx.amount).includes(query) ||
+                    (tx.holderName && tx.holderName.toLowerCase().includes(query))
                 );
             }
 
@@ -648,9 +690,10 @@
                             <div class="flex items-center flex-wrap gap-1 leading-tight">
                                 <span class="font-extrabold text-slate-800 text-[10.5px] sm:text-[13px]">${desc}</span>
                             </div>
-                            <div class="text-[8.5px] sm:text-[10px] text-slate-400 font-bold flex items-center gap-1 uppercase tracking-wider leading-none mt-0.5">
+                            <div class="text-[8.5px] sm:text-[10px] text-slate-400 font-bold flex items-center flex-wrap gap-1 uppercase tracking-wider leading-none mt-0.5">
                                 <span class="material-symbols-outlined text-[9px] sm:text-[12px] text-slate-400">calendar_today</span>
                                 <span>${date}</span>
+                                ${tx.holderName ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold text-[8px] sm:text-[9.5px] lowercase tracking-normal"><span class="material-symbols-outlined text-[9px] sm:text-[11px] text-slate-500">person</span>di tangan: <b class="capitalize text-slate-700">${tx.holderName}</b></span>` : ''}
                             </div>
                         </div>
                         ${newBadge}
@@ -906,6 +949,323 @@
             });
 
             container.appendChild(txListContainer);
+        }
+
+        // ======================= PEMEGANG KAS MODULE =======================
+        function renderHolders() {
+            const holderTabsContainer = document.getElementById('holder-tabs');
+            const activeHolderContainer = document.getElementById('holder-active-content');
+            const emptyState = document.getElementById('holder-empty-state');
+
+            holderTabsContainer.innerHTML = '';
+            activeHolderContainer.innerHTML = '';
+
+            const holders = appData.cashHolders || [];
+            const transactions = appData.transactions || [];
+            const transfers = appData.cashTransfers || [];
+            const tabs = appData.tabs || [];
+
+            // Update Top Sticky Balance Card for Pemegang Kas tab (Sky blue color scheme)
+            const saldoContainer = document.getElementById('saldo-box-container');
+            const saldoIconWrap = document.getElementById('saldo-icon-wrap');
+            const summaryBalance = document.getElementById('summary-balance');
+            const saldoLabel = document.getElementById('saldo-label');
+            const saldoIcon = document.getElementById('saldo-icon');
+
+            saldoLabel.innerText = 'TOTAL FISIK KAS DI TANGAN (SEMUA PEMEGANG)';
+            saldoIcon.innerText = 'account_balance_wallet';
+            summaryBalance.className = 'font-mono text-xl sm:text-3xl font-extrabold text-sky-600 mt-0.5 sm:mt-1 break-all transition-all';
+            saldoIconWrap.className = 'bg-sky-600 text-white p-3 sm:p-3.5 rounded-xl shadow-md shadow-sky-600/20 shrink-0 transition-all';
+            saldoContainer.className = 'bg-white rounded-2xl shadow-sm border border-sky-200 bg-gradient-to-r from-sky-50/50 to-slate-50/20 p-4 sm:p-6 flex items-center justify-between gap-4 print-card';
+
+            if (holders.length === 0) {
+                emptyState.classList.remove('hidden');
+                holderTabsContainer.classList.add('hidden');
+                activeHolderContainer.classList.add('hidden');
+                summaryBalance.innerText = 'Rp 0';
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                activeHolderContainer.classList.remove('hidden');
+            }
+
+            // Compute summary for each holder
+            let grandTotalPhysicalCash = 0;
+            const holderSummaries = holders.map(h => {
+                const hName = (h.name || '').trim();
+
+                // Transactions assigned to this holder
+                const txs = transactions.filter(t => (t.holderName || '').trim().toLowerCase() === hName.toLowerCase());
+
+                // Cash transfers in & out
+                const inTransfers = transfers.filter(tr => (tr.toHolder || '').trim().toLowerCase() === hName.toLowerCase());
+                const outTransfers = transfers.filter(tr => (tr.fromHolder || '').trim().toLowerCase() === hName.toLowerCase());
+
+                // Breakdown by tab
+                const breakdown = {};
+                tabs.forEach(tab => {
+                    const tabTxs = txs.filter(t => t.tabId === tab.id);
+                    const tabInTx = tabTxs.filter(t => t.type === 'MASUK').reduce((acc, c) => acc + c.amount, 0);
+                    const tabOutTx = tabTxs.filter(t => t.type === 'KELUAR').reduce((acc, c) => acc + c.amount, 0);
+
+                    const tabTrIn = inTransfers.filter(tr => tr.tabId === tab.id).reduce((acc, c) => acc + c.amount, 0);
+                    const tabTrOut = outTransfers.filter(tr => tr.tabId === tab.id).reduce((acc, c) => acc + c.amount, 0);
+
+                    const bal = tabInTx - tabOutTx + tabTrIn - tabTrOut;
+                    if (bal !== 0) {
+                        breakdown[tab.name] = bal;
+                    }
+                });
+
+                // Total balance across all tabs for this holder
+                const totalIn = txs.filter(t => t.type === 'MASUK').reduce((acc, c) => acc + c.amount, 0);
+                const totalOut = txs.filter(t => t.type === 'KELUAR').reduce((acc, c) => acc + c.amount, 0);
+                const totalTrIn = inTransfers.reduce((acc, c) => acc + c.amount, 0);
+                const totalTrOut = outTransfers.reduce((acc, c) => acc + c.amount, 0);
+
+                const totalBalance = totalIn - totalOut + totalTrIn - totalTrOut;
+                grandTotalPhysicalCash += totalBalance;
+
+                // Build combined chronological timeline
+                const timeline = [];
+                txs.forEach(t => {
+                    const tabObj = tabs.find(tb => tb.id === t.tabId);
+                    timeline.push({
+                        id: 'tx_' + t.id,
+                        timestamp: t.timestamp,
+                        type: t.type, // MASUK or KELUAR
+                        amount: t.amount,
+                        tabName: tabObj ? tabObj.name : 'Kas',
+                        title: t.description,
+                        subtext: 'Kas ' + (t.type === 'MASUK' ? 'Masuk' : 'Keluar')
+                    });
+                });
+
+                inTransfers.forEach(tr => {
+                    const tabObj = tabs.find(tb => tb.id === tr.tabId);
+                    timeline.push({
+                        id: 'tr_in_' + tr.id,
+                        timestamp: tr.timestamp,
+                        type: 'TRANSFER_MASUK',
+                        amount: tr.amount,
+                        tabName: tabObj ? tabObj.name : 'Kas',
+                        title: 'Terima dari ' + tr.fromHolder + (tr.note ? ' - ' + tr.note : ''),
+                        subtext: 'Pindah Tangan Uang (Masuk)'
+                    });
+                });
+
+                outTransfers.forEach(tr => {
+                    const tabObj = tabs.find(tb => tb.id === tr.tabId);
+                    timeline.push({
+                        id: 'tr_out_' + tr.id,
+                        timestamp: tr.timestamp,
+                        type: 'TRANSFER_KELUAR',
+                        amount: tr.amount,
+                        tabName: tabObj ? tabObj.name : 'Kas',
+                        title: 'Serahkan ke ' + tr.toHolder + (tr.note ? ' - ' + tr.note : ''),
+                        subtext: 'Pindah Tangan Uang (Keluar)'
+                    });
+                });
+
+                // Sort timeline ascending to calculate running balance
+                timeline.sort((a, b) => a.timestamp - b.timestamp);
+                let runBal = 0;
+                timeline.forEach(item => {
+                    if (item.type === 'MASUK' || item.type === 'TRANSFER_MASUK') {
+                        runBal += item.amount;
+                    } else {
+                        runBal -= item.amount;
+                    }
+                    item.runningBalance = runBal;
+                });
+
+                // Reverse for newest-first display
+                const displayTimeline = [...timeline].reverse();
+
+                return {
+                    holder: h,
+                    totalBalance: totalBalance,
+                    breakdown: breakdown,
+                    history: displayTimeline
+                };
+            });
+
+            summaryBalance.innerText = formatRupiah(grandTotalPhysicalCash);
+            window.currentHolderSummaries = holderSummaries;
+
+            // Auto-select holder
+            const holderNames = holderSummaries.map(s => s.holder.name);
+            if (!activeHolderName || !holderNames.includes(activeHolderName)) {
+                const defaultHolder = holderSummaries.find(s => s.holder.isDefault) || holderSummaries[0];
+                activeHolderName = defaultHolder.holder.name;
+            }
+
+            // Render Horizontal Sub Tabs if more than 1 holder
+            if (holderSummaries.length > 1) {
+                holderTabsContainer.classList.remove('hidden');
+                holderSummaries.forEach(item => {
+                    const isSelected = item.holder.name === activeHolderName;
+                    const tabBtn = document.createElement('button');
+                    tabBtn.type = 'button';
+                    tabBtn.onclick = () => {
+                        activeHolderName = item.holder.name;
+                        renderHolders();
+                    };
+
+                    const activeClass = isSelected
+                        ? 'bg-sky-600 text-white shadow-sm shadow-sky-600/25 ring-2 ring-sky-500'
+                        : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200';
+
+                    tabBtn.className = `px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 whitespace-nowrap transition-all duration-150 shrink-0 ${activeClass}`;
+                    tabBtn.innerHTML = `
+                        <span class="material-symbols-outlined text-base">person</span>
+                        <span>${item.holder.name}</span>
+                        ${item.holder.isDefault ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500 text-white font-black uppercase">Utama</span>' : ''}
+                        <span class="text-[10px] opacity-90 font-mono">${formatRupiah(item.totalBalance)}</span>
+                    `;
+                    holderTabsContainer.appendChild(tabBtn);
+                });
+            } else {
+                holderTabsContainer.classList.add('hidden');
+            }
+
+            renderActiveHolder();
+        }
+
+        function renderActiveHolder() {
+            const container = document.getElementById('holder-active-content');
+            if (!container || !window.currentHolderSummaries) return;
+            container.innerHTML = '';
+
+            const holderItem = window.currentHolderSummaries.find(s => s.holder.name === activeHolderName) || window.currentHolderSummaries[0];
+            if (!holderItem) return;
+
+            const h = holderItem.holder;
+            const initial = (h.name || 'P').charAt(0).toUpperCase();
+
+            // Card 1: Active Holder Summary
+            const summaryCard = document.createElement('div');
+            summaryCard.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4';
+
+            // Top row: Avatar + Name + Role + Balance
+            let breakdownBadges = '';
+            const breakdownKeys = Object.keys(holderItem.breakdown);
+            if (breakdownKeys.length > 0) {
+                breakdownBadges = `
+                    <div class="pt-3 border-t border-slate-100">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Rincian Saldo Kas di Tangan:</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${breakdownKeys.map(k => `
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-100 text-sky-800 text-[11px] font-semibold">
+                                    <span class="material-symbols-outlined text-xs text-sky-600">account_balance</span>
+                                    <span>${k}:</span>
+                                    <b class="font-mono text-sky-700">${formatRupiah(holderItem.breakdown[k])}</b>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            summaryCard.innerHTML = `
+                <div class="flex items-center justify-between gap-4 flex-wrap">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center font-black text-base shrink-0">
+                            ${initial}
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-extrabold text-slate-800 text-base sm:text-lg">${h.name}</h3>
+                                ${h.isDefault ? '<span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">Utama</span>' : ''}
+                            </div>
+                            <p class="text-xs text-slate-500 font-medium">${h.role || 'Pemegang Kas Organisasi'}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider block">Saldo di Tangan:</span>
+                        <span class="font-mono font-extrabold text-lg sm:text-2xl ${holderItem.totalBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${formatRupiah(holderItem.totalBalance)}
+                        </span>
+                    </div>
+                </div>
+                ${breakdownBadges}
+            `;
+            container.appendChild(summaryCard);
+
+            // Card 2: History Timeline
+            const historyCard = document.createElement('div');
+            historyCard.className = 'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden';
+
+            const historyHeader = document.createElement('div');
+            historyHeader.className = 'px-4 py-3 sm:px-6 sm:py-3.5 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between';
+            historyHeader.innerHTML = `
+                <div>
+                    <h4 class="font-extrabold text-slate-800 text-sm sm:text-base">Riwayat Keluar / Masuk di Tangan</h4>
+                    <p class="text-xs text-slate-400">Total ${holderItem.history.length} catatan mutasi kas</p>
+                </div>
+                <span class="material-symbols-outlined text-slate-400">history</span>
+            `;
+            historyCard.appendChild(historyHeader);
+
+            if (holderItem.history.length === 0) {
+                const emptyHist = document.createElement('div');
+                emptyHist.className = 'py-12 text-center text-slate-400 text-xs sm:text-sm';
+                emptyHist.innerHTML = `
+                    <span class="material-symbols-outlined text-3xl mb-1 text-slate-300 block">receipt_long</span>
+                    Belum ada riwayat transaksi kas yang tercatat atas nama ${h.name}.
+                `;
+                historyCard.appendChild(emptyHist);
+            } else {
+                const txList = document.createElement('div');
+                txList.className = 'divide-y divide-slate-100 px-4 sm:px-6';
+
+                holderItem.history.forEach(item => {
+                    const isPositive = item.type === 'MASUK' || item.type === 'TRANSFER_MASUK';
+                    const badgeClass = {
+                        'MASUK': 'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        'KELUAR': 'bg-rose-50 text-rose-700 border-rose-200',
+                        'TRANSFER_MASUK': 'bg-sky-50 text-sky-700 border-sky-200',
+                        'TRANSFER_KELUAR': 'bg-amber-50 text-amber-700 border-amber-200'
+                    }[item.type] || 'bg-slate-50 text-slate-700 border-slate-200';
+
+                    const typeLabel = {
+                        'MASUK': 'KAS MASUK',
+                        'KELUAR': 'KAS KELUAR',
+                        'TRANSFER_MASUK': 'PINDAH TANGAN (MASUK)',
+                        'TRANSFER_KELUAR': 'PINDAH TANGAN (KELUAR)'
+                    }[item.type] || item.type;
+
+                    const row = document.createElement('div');
+                    row.className = 'py-3 sm:py-3.5 flex flex-col space-y-1.5';
+                    row.innerHTML = `
+                        <div class="flex items-center justify-between gap-2 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${badgeClass}">${typeLabel}</span>
+                                <span class="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-slate-100 text-slate-600">${item.tabName}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-400 font-medium">${formatDate(item.timestamp)}</span>
+                        </div>
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-slate-800 text-xs sm:text-sm leading-snug">${item.title}</p>
+                                <p class="text-[10px] text-slate-400 mt-0.5">${item.subtext}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="font-mono font-extrabold text-xs sm:text-sm ${isPositive ? 'text-emerald-600' : 'text-rose-600'}">
+                                    ${isPositive ? '+' : '-'}${formatRupiah(item.amount)}
+                                </span>
+                                <div class="text-[9px] text-slate-400 font-mono mt-0.5">
+                                    Saldo: ${formatRupiah(item.runningBalance)}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    txList.appendChild(row);
+                });
+                historyCard.appendChild(txList);
+            }
+
+            container.appendChild(historyCard);
         }
 
         // Scroll event listener to shrink/expand saldo card smoothly
