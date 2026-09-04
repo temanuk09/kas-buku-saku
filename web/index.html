@@ -351,6 +351,16 @@
 
     </main>
 
+    <!-- Floating Jump to Newest Transaction Button (Panah Samar Abu-Abu) -->
+    <button id="jump-to-newest-btn" 
+            type="button"
+            onclick="jumpToNewestTransaction()"
+            title="Loncat ke transaksi terbaru"
+            aria-label="Loncat ke transaksi terbaru"
+            class="fixed bottom-5 right-4 sm:bottom-6 sm:right-6 z-40 bg-slate-200/80 hover:bg-slate-300/90 text-slate-500 hover:text-slate-700 border border-slate-300/70 shadow-md backdrop-blur-sm rounded-full w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center transition-all duration-300 opacity-0 pointer-events-none transform translate-y-3 cursor-pointer no-print focus:outline-none select-none">
+        <span class="material-symbols-outlined text-xl sm:text-2xl">arrow_downward</span>
+    </button>
+
     <!-- Footer Copyright -->
     <footer class="bg-slate-900 border-t border-slate-800 text-slate-500 py-6 text-center text-xs mt-12 no-print">
         <div class="max-w-7xl mx-auto px-4">
@@ -565,30 +575,31 @@
             // Keep saldo-box-container ALWAYS visible so header area never disappears
             document.getElementById('saldo-box-container').classList.remove('hidden');
 
-            // Immediately reset scroll to top so user sees all header info and subtabs clearly
-            window.scrollTo(0, 0);
-
             if (id === 'HUTANG_PIUTANG') {
+                // Keep Utang tab view at the top
+                window.scrollTo(0, 0);
                 document.getElementById('transactions-panel').classList.add('hidden');
                 document.getElementById('debts-panel').classList.remove('hidden');
                 document.getElementById('holders-panel').classList.add('hidden');
                 renderDebts();
+                setTimeout(() => window.scrollTo(0, 0), 10);
+                updateJumpButtonVisibility();
             } else if (id === 'PEMEGANG_KAS') {
+                // Keep Pemegang Kas tab view at the top
+                window.scrollTo(0, 0);
                 document.getElementById('transactions-panel').classList.add('hidden');
                 document.getElementById('debts-panel').classList.add('hidden');
                 document.getElementById('holders-panel').classList.remove('hidden');
                 renderHolders();
+                setTimeout(() => window.scrollTo(0, 0), 10);
+                updateJumpButtonVisibility();
             } else {
                 document.getElementById('transactions-panel').classList.remove('hidden');
                 document.getElementById('debts-panel').classList.add('hidden');
                 document.getElementById('holders-panel').classList.add('hidden');
-                renderSummariesAndRecords(false);
+                // Always show newest transaction on cash tabs
+                renderSummariesAndRecords(true);
             }
-
-            // Ensure scroll is at top after DOM renders
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 10);
 
             // Push history state so device/browser back button returns to previous tab instead of closing web
             if (pushHistory && window.history && window.history.pushState) {
@@ -596,8 +607,8 @@
             }
         }
 
-        function renderSummariesAndRecords() {
-            if (!appData || selectedTabId === 'HUTANG_PIUTANG' || selectedTabId === null) return;
+        function renderSummariesAndRecords(shouldScroll = true) {
+            if (!appData || selectedTabId === 'HUTANG_PIUTANG' || selectedTabId === 'PEMEGANG_KAS' || selectedTabId === null) return;
 
             // Filter transactions under selected tab
             let txs = appData.transactions.filter(tx => tx.tabId === selectedTabId);
@@ -636,10 +647,10 @@
 
             // Save structured transactions to global for filtering search later
             window.activeTxsSource = [...structuredTxs]; // oldest first for display
-            applyFilters(true); // pass true to trigger auto-scroll to latest transaction
+            applyFilters(shouldScroll);
         }
 
-         function applyFilters(shouldScroll = false) {
+        function applyFilters(shouldScroll = false) {
             const query = document.getElementById('tx-search').value.toLowerCase().trim();
             const container = document.getElementById('tx-table-body');
             const emptyState = document.getElementById('tx-empty-state');
@@ -660,6 +671,7 @@
 
             if (filtered.length === 0) {
                 emptyState.classList.remove('hidden');
+                updateJumpButtonVisibility();
                 return;
             } else {
                 emptyState.classList.add('hidden');
@@ -712,6 +724,22 @@
                 `;
                 container.appendChild(tr);
             });
+
+            // Auto-scroll directly to newest transaction (bottom) on tab change / initial load for cash tabs
+            if (shouldScroll && filtered.length > 0) {
+                const doScroll = () => {
+                    const rows = container.getElementsByTagName('tr');
+                    if (rows.length > 0) {
+                        const lastRow = rows[rows.length - 1];
+                        lastRow.scrollIntoView({ behavior: 'auto', block: 'end' });
+                        updateJumpButtonVisibility();
+                    }
+                };
+                setTimeout(doScroll, 50);
+                setTimeout(doScroll, 200);
+            } else {
+                setTimeout(updateJumpButtonVisibility, 50);
+            }
         }
 
         function renderDebts() {
@@ -1263,16 +1291,73 @@
             container.appendChild(historyCard);
         }
 
-        // Scroll event listener to shrink/expand saldo card smoothly
+        // Check visibility of the newest (last) transaction to toggle floating gray arrow
+        function updateJumpButtonVisibility() {
+            const btn = document.getElementById('jump-to-newest-btn');
+            if (!btn) return;
+
+            // Never show on Utang or Pemegang Kas tabs, or when appData is missing
+            if (!appData || selectedTabId === 'HUTANG_PIUTANG' || selectedTabId === 'PEMEGANG_KAS') {
+                btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+                btn.classList.remove('opacity-90', 'pointer-events-auto', 'translate-y-0');
+                return;
+            }
+
+            const rows = document.getElementById('tx-table-body')?.getElementsByTagName('tr');
+            if (!rows || rows.length === 0) {
+                btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+                btn.classList.remove('opacity-90', 'pointer-events-auto', 'translate-y-0');
+                return;
+            }
+
+            const lastRow = rows[rows.length - 1];
+            const rect = lastRow.getBoundingClientRect();
+            const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+
+            // If newest transaction row is visible within viewport (+ 24px tolerance), hide button
+            const isVisible = (rect.top <= (windowHeight + 24) && rect.bottom >= 0);
+
+            if (isVisible) {
+                btn.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+                btn.classList.remove('opacity-90', 'pointer-events-auto', 'translate-y-0');
+            } else {
+                // User is scrolled up viewing older transactions -> show subtle gray down arrow
+                btn.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+                btn.classList.add('opacity-90', 'pointer-events-auto', 'translate-y-0');
+            }
+        }
+
+        // Smooth scroll to newest transaction
+        function jumpToNewestTransaction() {
+            const rows = document.getElementById('tx-table-body')?.getElementsByTagName('tr');
+            if (rows && rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                lastRow.scrollIntoView({ behavior: 'smooth', block: 'end' });
+
+                // Follow smooth scroll until newest transaction enters view
+                let count = 0;
+                const tracker = setInterval(() => {
+                    updateJumpButtonVisibility();
+                    count++;
+                    if (count > 25) clearInterval(tracker);
+                }, 50);
+            }
+        }
+
+        // Scroll event listener to shrink/expand saldo card smoothly and toggle jump button
         window.addEventListener('scroll', () => {
             const stickyZone = document.getElementById('sticky-header-zone');
-            if (!stickyZone) return;
-            if (window.scrollY > 40) {
-                stickyZone.classList.add('is-scrolled');
-            } else {
-                stickyZone.classList.remove('is-scrolled');
+            if (stickyZone) {
+                if (window.scrollY > 40) {
+                    stickyZone.classList.add('is-scrolled');
+                } else {
+                    stickyZone.classList.remove('is-scrolled');
+                }
             }
+            updateJumpButtonVisibility();
         }, { passive: true });
+
+        window.addEventListener('resize', updateJumpButtonVisibility, { passive: true });
 
         // Back button navigation handler to navigate back across tabs instead of exiting
         window.addEventListener('popstate', (e) => {
