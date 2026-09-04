@@ -193,7 +193,7 @@
                 Silakan masukkan <b>Kode Laman Web</b> Buku Kas Anda untuk membuka laporan online interaktif. Kode ini bisa Anda temukan di menu Pengalaman Laman Web pada aplikasi HP Anda.
             </p>
             <div class="mt-6">
-                <input type="text" id="manual-key" placeholder="Contoh: kas_d0778ef0" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-center font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800">
+                <input type="text" id="manual-key" placeholder="Contoh: kas_31a48cdd" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-center font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800">
                 <button onclick="loadManualKey()" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm py-2.5 rounded-lg shadow transition-all">
                     Buka Laporan
                 </button>
@@ -312,64 +312,38 @@
             </div>
 
             <!-- DEBTS PANEL (Full Width when Active, hidden in dashboard standard view) -->
-            <div id="debts-panel" class="hidden flex flex-col space-y-4">
-                
-                <!-- Filter Sumber Utang Button Chips -->
-                <div class="no-print flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
-                    <button onclick="selectDebtSource('SEMUA')" id="debt-source-semua" class="debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-rose-600 text-white shadow-sm border border-rose-600">
-                        Semua Sumber
-                    </button>
-                    <div id="debt-summary-sources" class="flex items-center space-x-2">
-                        <!-- Sources rendered dynamically -->
+            <div id="debts-panel" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6 print-card">
+                <!-- Summary of Outstanding Balances per Source/Mitra (Sisa Utang) -->
+                <div id="debt-summary-container" class="hidden space-y-3 pb-3 border-b border-slate-100">
+                    <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5 px-0.5">
+                        <span class="material-symbols-outlined text-xs">account_balance</span>
+                        Sisa Utang Aktif per Mitra / Sumber Utang
+                    </div>
+                    <div id="debt-summary-sources" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <!-- Rendered dynamically -->
                     </div>
                 </div>
 
-                <!-- Summary Cards Row (Sisa Hutang & Total Tertagih) -->
-                <div id="debt-summary-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div class="bg-white rounded-2xl p-5 border border-rose-100 shadow-sm flex items-center space-x-4 bg-gradient-to-br from-rose-50/40 to-white">
-                        <div class="bg-rose-600 text-white p-3 rounded-xl shadow-md shadow-rose-600/20">
-                            <span class="material-symbols-outlined text-2xl">trending_down</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-500">Sisa Tanggungan Utang</span>
-                            <h4 id="debt-summary-unpaid" class="font-mono text-xl sm:text-2xl font-extrabold text-rose-700 mt-0.5">Rp 0</h4>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm flex items-center space-x-4 bg-gradient-to-br from-emerald-50/40 to-white">
-                        <div class="bg-emerald-600 text-white p-3 rounded-xl shadow-md shadow-emerald-600/20">
-                            <span class="material-symbols-outlined text-2xl">check_circle</span>
-                        </div>
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Total Pembayaran Utang</span>
-                            <h4 id="debt-summary-paid" class="font-mono text-xl sm:text-2xl font-extrabold text-emerald-700 mt-0.5">Rp 0</h4>
-                        </div>
-                    </div>
+                <div id="debt-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Debts rendered dynamically -->
                 </div>
 
-                <!-- Debt Records List Container -->
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col print-card">
-                    <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
-                        <div>
-                            <h3 class="font-display font-bold text-base sm:text-lg text-slate-800">Catatan Buku Hutang</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">Riwayat penambahan utang dan angsuran pembayaran</p>
-                        </div>
-                    </div>
-
-                    <div id="debt-list" class="divide-y divide-slate-100">
-                        <!-- Debt items rendered here -->
-                    </div>
-
-                    <div id="debt-empty-state" class="hidden py-16 text-center">
-                        <span class="material-symbols-outlined text-slate-300 text-4xl">receipt_long</span>
-                        <p class="text-sm font-medium text-slate-500 mt-2">Belum ada catatan buku hutang.</p>
-                    </div>
+                <div id="debt-empty-state" class="hidden py-16 text-center">
+                    <span class="material-symbols-outlined text-slate-300 text-5xl">done_all</span>
+                    <p class="text-sm font-semibold text-slate-500 mt-2">Tidak ada hutang atau piutang yang tercatat saat ini.</p>
                 </div>
             </div>
 
         </div>
 
     </main>
+
+    <!-- Footer Copyright -->
+    <footer class="bg-slate-900 border-t border-slate-800 text-slate-500 py-6 text-center text-xs mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>© 2026 Buku Kas Gunung Tua. Hak Cipta dilindungi undang-undang.</p>
+        </div>
+    </footer>
 
     <!-- Logic Engine -->
     <script>
@@ -495,6 +469,9 @@
             // Get first tab default
             if (appData.tabs && appData.tabs.length > 0) {
                 selectedTabId = appData.tabs[0].id;
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({ tabId: selectedTabId, tabName: appData.tabs[0].name }, '');
+                }
                 renderTabs();
                 renderSummariesAndRecords();
                 renderDebts();
@@ -508,13 +485,11 @@
             const container = document.getElementById('tab-bar-container');
             container.innerHTML = '';
 
-            if (!appData || !appData.tabs) return;
-
             appData.tabs.forEach(tab => {
                 const btn = document.createElement('button');
                 btn.className = `flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border text-[11px] sm:text-xs font-bold transition-all duration-200 whitespace-nowrap snap-center shrink-0 ${
-                    selectedTabId === tab.id 
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10 scale-[1.01] tab-btn-active' 
+                    tab.id === selectedTabId 
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10 scale-[1.01] tab-btn-active' 
                     : 'bg-white border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-slate-50'
                 }`;
                 btn.onclick = () => selectTab(tab.id, tab.name);
@@ -555,21 +530,27 @@
             }
         }
 
-        function selectTab(id, name) {
+        function selectTab(id, name, pushHistory = true) {
             selectedTabId = id;
             document.getElementById('print-tab-name').innerText = name.toUpperCase();
             renderTabs();
             
+            // Keep saldo-box-container ALWAYS visible so header area never disappears
+            document.getElementById('saldo-box-container').classList.remove('hidden');
+
             if (id === 'HUTANG_PIUTANG') {
-                document.getElementById('sticky-header-zone').classList.add('hidden');
                 document.getElementById('transactions-panel').classList.add('hidden');
                 document.getElementById('debts-panel').classList.remove('hidden');
                 renderDebts();
             } else {
-                document.getElementById('sticky-header-zone').classList.remove('hidden');
                 document.getElementById('transactions-panel').classList.remove('hidden');
                 document.getElementById('debts-panel').classList.add('hidden');
                 renderSummariesAndRecords();
+            }
+
+            // Push history state so device/browser back button returns to previous tab instead of closing web
+            if (pushHistory && window.history && window.history.pushState) {
+                window.history.pushState({ tabId: id, tabName: name }, '');
             }
         }
 
@@ -598,6 +579,8 @@
             });
 
             // Update Single Balance Card Sisa
+            document.getElementById('saldo-label').innerText = 'Saldo Saat Ini';
+            document.getElementById('saldo-icon').innerText = 'account_balance_wallet';
             document.getElementById('summary-balance').innerText = formatRupiah(totalIncome - totalExpense);
 
             // Save structured transactions to global for filtering search later
@@ -707,84 +690,133 @@
             if (debts.length === 0) {
                 emptyState.classList.remove('hidden');
                 summaryContainer.classList.add('hidden');
+                document.getElementById('summary-balance').innerText = 'Rp 0';
+                document.getElementById('saldo-label').innerText = 'Sisa Utang Belum Lunas';
                 return;
             } else {
                 emptyState.classList.add('hidden');
                 summaryContainer.classList.remove('hidden');
             }
 
-            // Extract unique debt sources
-            const uniqueSources = [...new Set(debts.map(d => d.sourceTabName || 'Umum'))];
-            
-            // Render Source Filter Buttons
-            const semuaBtn = document.getElementById('debt-source-semua');
-            if (selectedDebtSource === 'SEMUA') {
-                semuaBtn.className = 'debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-rose-600 text-white shadow-sm border border-rose-600';
-            } else {
-                semuaBtn.className = 'debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
-            }
-
-            uniqueSources.forEach(src => {
-                const btn = document.createElement('button');
-                const isSelected = selectedDebtSource === src;
-                btn.className = `debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-                    isSelected 
-                    ? 'bg-rose-600 text-white shadow-sm border border-rose-600' 
-                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
-                }`;
-                btn.innerText = src;
-                btn.onclick = () => selectDebtSource(src);
-                summarySources.appendChild(btn);
-            });
-
-            // Calculate overall or per-source running debt balance
-            let filteredDebts = debts;
-            if (selectedDebtSource !== 'SEMUA') {
-                filteredDebts = debts.filter(d => (d.sourceTabName || 'Umum') === selectedDebtSource);
-            }
-
-            // Sort chronological (oldest to newest)
-            filteredDebts.sort((a, b) => a.timestamp - b.timestamp);
-
-            let totalDebtAdded = 0;
-            let totalDebtPaid = 0;
-
-            // Track due date display
-            let runningBalance = 0;
+            // Calculate running balance per source chronologically (oldest first)
+            const sourceBalances = {};
+            const sortedChain = [...debts].sort((a, b) => a.timestamp - b.timestamp);
+            const txRunningBalances = {};
             const txShowDueDate = {};
 
-            filteredDebts.forEach(d => {
-                const isPiutang = d.type === 'PIUTANG'; // Repayment
-                if (isPiutang) {
-                    totalDebtPaid += d.amount;
-                    runningBalance -= d.amount;
-                } else {
-                    totalDebtAdded += d.amount;
-                    if (runningBalance <= 0) {
+            sortedChain.forEach(d => {
+                const src = d.source || "Tidak Diketahui";
+                const previousBalance = sourceBalances[src] || 0;
+                
+                if (d.type === 'HUTANG') {
+                    if (previousBalance === 0) {
                         txShowDueDate[d.id] = true;
+                    } else {
+                        txShowDueDate[d.id] = false;
                     }
-                    runningBalance += d.amount;
+                    sourceBalances[src] = previousBalance + d.amount;
+                } else {
+                    txShowDueDate[d.id] = false;
+                    sourceBalances[src] = Math.max(0, previousBalance - d.amount);
                 }
+                txRunningBalances[d.id] = sourceBalances[src];
             });
 
-            const netDebtRemaining = Math.max(0, totalDebtAdded - totalDebtPaid);
+            const uniqueSources = Object.keys(sourceBalances).sort();
 
-            document.getElementById('debt-summary-unpaid').innerText = formatRupiah(netDebtRemaining);
-            document.getElementById('debt-summary-paid').innerText = formatRupiah(totalDebtPaid);
+            // Total outstanding across all sources
+            const totalOutstandingAll = Object.values(sourceBalances).reduce((acc, b) => acc + b, 0);
 
-            // Render Debt Items
+            // Default to 'SEMUA' (all sources) if not selected, or if selected source is no longer valid
+            if (!selectedDebtSource || (selectedDebtSource !== 'SEMUA' && !uniqueSources.includes(selectedDebtSource))) {
+                selectedDebtSource = 'SEMUA';
+            }
+
+            // Update top sticky balance card for Hutang tab
+            document.getElementById('saldo-icon').innerText = 'receipt_long';
+            if (selectedDebtSource === 'SEMUA') {
+                document.getElementById('saldo-label').innerText = 'Total Sisa Utang (Semua Sumber)';
+                document.getElementById('summary-balance').innerText = formatRupiah(totalOutstandingAll);
+            } else {
+                const currentSrcBal = sourceBalances[selectedDebtSource] || 0;
+                document.getElementById('saldo-label').innerText = `Sisa Utang (${selectedDebtSource})`;
+                document.getElementById('summary-balance').innerText = formatRupiah(currentSrcBal);
+            }
+
+            // 1. Render 'Semua Sumber' Card First
+            const allCard = document.createElement('div');
+            const isAllSelected = selectedDebtSource === 'SEMUA';
+            allCard.className = `${isAllSelected ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-300 scale-[1.01]' : 'hover:bg-slate-50 border-slate-200 bg-white'} border rounded-xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-sm`;
+            allCard.onclick = () => selectDebtSource('SEMUA');
+            allCard.innerHTML = `
+                <div class="flex items-center justify-between gap-1">
+                    <span class="font-extrabold text-slate-800 text-xs sm:text-sm">Semua Sumber</span>
+                    <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider ${totalOutstandingAll > 0 ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">${totalOutstandingAll > 0 ? 'BELUM LUNAS' : 'LUNAS'}</span>
+                </div>
+                <div class="mt-2 flex flex-col">
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Total Sisa Utang</span>
+                    <span class="font-mono font-extrabold ${totalOutstandingAll > 0 ? 'text-amber-700' : 'text-slate-400'} text-sm sm:text-base mt-0.5">${formatRupiah(totalOutstandingAll)}</span>
+                </div>
+            `;
+            summarySources.appendChild(allCard);
+
+            // 2. Render summary cards per Source/Mitra
+            uniqueSources.forEach(src => {
+                const balance = sourceBalances[src];
+                const card = document.createElement('div');
+                const isSelected = src === selectedDebtSource;
+                
+                const activeStateClass = isSelected 
+                    ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-300 scale-[1.01]' 
+                    : 'hover:bg-slate-50 border-slate-200 bg-white';
+
+                card.className = `${activeStateClass} border rounded-xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-sm`;
+                card.onclick = () => selectDebtSource(src);
+                
+                if (balance > 0) {
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="font-extrabold text-slate-800 text-xs sm:text-sm truncate max-w-[130px]">${src}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">BELUM LUNAS</span>
+                        </div>
+                        <div class="mt-2 flex flex-col">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
+                            <span class="font-mono font-extrabold text-amber-700 text-sm sm:text-base mt-0.5">${formatRupiah(balance)}</span>
+                        </div>
+                    `;
+                } else {
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="font-extrabold text-slate-500 text-xs sm:text-sm truncate max-w-[130px]">${src}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">LUNAS</span>
+                        </div>
+                        <div class="mt-2 flex flex-col">
+                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
+                            <span class="font-mono font-bold text-slate-400 text-xs sm:text-sm mt-0.5">Rp 0 (Lunas)</span>
+                        </div>
+                    `;
+                }
+                summarySources.appendChild(card);
+            });
+
+            // Display filtered transactions in chronological order: oldest first
+            const filteredDebts = selectedDebtSource === 'SEMUA' 
+                ? [...debts] 
+                : debts.filter(d => (d.source || "Tidak Diketahui") === selectedDebtSource);
+            filteredDebts.sort((a,b) => a.timestamp - b.timestamp);
+
             filteredDebts.forEach(d => {
                 const item = document.createElement('div');
-                item.className = 'p-4 sm:p-5 hover:bg-slate-50 transition-colors duration-150';
+                item.className = 'bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-2xl p-4 flex flex-col space-y-2 transition-all duration-200';
 
-                const isPiutang = d.type === 'PIUTANG';
-                const typeText = isPiutang ? 'Bayar Utang' : 'Tambah Utang';
+                const isPiutang = d.type === 'PIUTANG'; // we lend back, meaning a payment/repayment
+                const typeText = isPiutang ? 'PEMBAYARAN UTANG' : 'TAMBAH UTANG';
                 const typeColor = isPiutang ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100';
                 
                 const isLunas = d.status === 'LUNAS';
                 const statusBadge = isLunas 
                     ? '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-green-100 text-green-800">LUNAS</span>'
-                    : '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-805 animate-pulse">BELUM LUNAS</span>';
+                    : '<span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 animate-pulse">BELUM LUNAS</span>';
 
                 // Display due date ONLY if type is 'HUTANG' (Tambah Utang) AND it established a new cycle
                 let dueDateHtml = '';
@@ -800,6 +832,7 @@
                         <div class="flex flex-col space-y-1">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${typeColor}">${typeText}</span>
+                                <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-slate-200 text-slate-700">${d.source || 'Sumber'}</span>
                                 ${statusBadge}
                             </div>
                             <div class="flex items-center gap-2 flex-wrap mt-0.5">
@@ -827,6 +860,15 @@
                 stickyZone.classList.remove('is-scrolled');
             }
         }, { passive: true });
+
+        // Back button navigation handler to navigate back across tabs instead of exiting
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.tabId) {
+                selectTab(e.state.tabId, e.state.tabName || '', false);
+            } else if (appData && appData.tabs && appData.tabs.length > 0) {
+                selectTab(appData.tabs[0].id, appData.tabs[0].name, false);
+            }
+        });
 
         // Service Worker Registration for PWA
         if ('serviceWorker' in navigator) {
