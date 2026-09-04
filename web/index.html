@@ -2,8 +2,18 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Buku Kas Gunung Tua - Online Viewer</title>
+    <!-- PWA Settings -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Buku Kas">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="icon" type="image/png" href="icon.png">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts & Material Symbols -->
@@ -58,6 +68,48 @@
             background: #94a3b8;
         }
 
+        /* Sticky navigation & compact shrinking balance card */
+        .sticky-nav-wrapper {
+            position: sticky;
+            top: 48px; /* Below top app bar */
+            z-index: 40;
+            background: rgba(248, 250, 252, 0.96);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #saldo-box-container {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Shrink state when scrolling */
+        .is-scrolled #saldo-box-container {
+            padding: 0.625rem 1rem !important;
+            border-radius: 0.875rem !important;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07) !important;
+            background: #ffffff !important;
+        }
+        .is-scrolled #saldo-icon-wrap {
+            padding: 0.5rem !important;
+            border-radius: 0.5rem !important;
+        }
+        .is-scrolled #saldo-icon {
+            font-size: 1.25rem !important;
+        }
+        .is-scrolled #saldo-label {
+            font-size: 0.65rem !important;
+            margin-bottom: 0 !important;
+        }
+        .is-scrolled #summary-balance {
+            font-size: 1.125rem !important;
+            line-height: 1.25rem !important;
+            margin-top: 0 !important;
+        }
+        .is-scrolled #saldo-tagline {
+            display: none !important;
+        }
+
         /* Printable optimized styles */
         @media print {
             body {
@@ -103,11 +155,15 @@
             <div class="flex items-center space-x-2">
                 <span class="material-symbols-outlined text-emerald-400 text-lg">account_balance_wallet</span>
                 <div>
-                     <h1 class="font-display font-bold text-xs sm:text-sm leading-tight tracking-wide">Buku Kas Gunung Tua</h1>
+                    <h1 class="font-display font-bold text-xs sm:text-sm leading-tight tracking-wide">Buku Kas Gunung Tua</h1>
                     <p class="text-[8px] text-slate-400 tracking-wider font-medium uppercase">Laporan Online (Hanya-Baca)</p>
                 </div>
             </div>
             <div class="flex items-center space-x-2">
+                <button id="pwa-install-btn" class="hidden items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 transition-all text-white font-medium text-[10px] px-2.5 py-1.5 rounded-md shadow-sm border border-emerald-500/30 animate-pulse">
+                    <span class="material-symbols-outlined text-xs">download</span>
+                    <span>Instal Aplikasi</span>
+                </button>
                 <button onclick="window.print()" class="flex items-center space-x-1 bg-indigo-600 hover:bg-indigo-500 transition-all text-white font-medium text-[10px] px-2.5 py-1.5 rounded-md shadow-sm border border-indigo-500/30">
                     <span class="material-symbols-outlined text-xs">print</span>
                     <span>Cetak Laporan / PDF</span>
@@ -136,10 +192,10 @@
             <p class="text-sm text-slate-500 mt-2 leading-relaxed">
                 Silakan masukkan <b>Kode Laman Web</b> Buku Kas Anda untuk membuka laporan online interaktif. Kode ini bisa Anda temukan di menu Pengalaman Laman Web pada aplikasi HP Anda.
             </p>
-            <div class="mt-6">
-                <input type="text" id="manual-key" placeholder="Contoh: kas_31a48cdd" class="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-center font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800">
-                <button onclick="loadManualKey()" class="w-full mt-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-sm py-2.5 rounded-lg shadow transition-all">
-                    Buka Laporan
+            <div class="mt-6 flex flex-col space-y-3">
+                <input type="text" id="manual-key-input" placeholder="Masukkan ID / Kode Laman Web..." class="w-full px-4 py-2.5 border border-slate-300 rounded-xl font-mono text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-widest font-bold">
+                <button onclick="saveManualKey()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-all shadow-md shadow-indigo-600/20">
+                    Buka Laporan Kas
                 </button>
             </div>
         </div>
@@ -170,31 +226,34 @@
                 </div>
             </div>
 
-            <!-- Dynamic Tab Bar Categories Navigation (Now direct on top) -->
-            <div class="no-print space-y-1">
-                <div class="flex items-center space-x-2 text-slate-400 px-1">
-                    <span class="material-symbols-outlined text-sm">grid_view</span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Kategori Buku Kas</span>
+            <!-- Sticky Nav Wrapper: Tab Bar & Shrinking Balance Card -->
+            <div id="sticky-header-zone" class="sticky-nav-wrapper no-print -mx-4 px-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 py-2.5 space-y-2 border-b border-slate-200/80 mb-2">
+                <!-- Dynamic Tab Bar Categories Navigation -->
+                <div class="space-y-1">
+                    <div class="flex items-center space-x-2 text-slate-400 px-1">
+                        <span class="material-symbols-outlined text-sm">grid_view</span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Kategori Buku Kas</span>
+                    </div>
+                    <div id="tab-bar-container" class="flex flex-nowrap overflow-x-auto gap-2 pb-1 scrollbar-none">
+                        <!-- Tabs rendered dynamically -->
+                    </div>
                 </div>
-                <div id="tab-bar-container" class="flex flex-nowrap overflow-x-auto gap-2 pb-1.5 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0">
-                    <!-- Tabs rendered dynamically -->
-                </div>
-            </div>
 
-            <!-- Single Balance Card (Unbreakable & Styled) -->
-            <div id="saldo-box-container" class="bg-white rounded-2xl shadow-sm border border-indigo-100 bg-gradient-to-r from-indigo-50/30 to-slate-50/20 p-5 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-4 print-card">
-                <div class="flex items-center space-x-4">
-                    <div class="bg-indigo-600 text-white p-3.5 rounded-xl shadow-md shadow-indigo-600/20">
-                        <span class="material-symbols-outlined text-3xl">account_balance_wallet</span>
+                <!-- Single Balance Card (With Shrinking State on Scroll) -->
+                <div id="saldo-box-container" class="bg-white rounded-2xl shadow-sm border border-indigo-100 bg-gradient-to-r from-indigo-50/30 to-slate-50/20 p-4 sm:p-6 flex items-center justify-between gap-4 print-card">
+                    <div class="flex items-center space-x-3 sm:space-x-4">
+                        <div id="saldo-icon-wrap" class="bg-indigo-600 text-white p-3 sm:p-3.5 rounded-xl shadow-md shadow-indigo-600/20 shrink-0 transition-all">
+                            <span id="saldo-icon" class="material-symbols-outlined text-2xl sm:text-3xl transition-all">account_balance_wallet</span>
+                        </div>
+                        <div>
+                            <p id="saldo-label" class="text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider transition-all">Saldo Saat Ini</p>
+                            <h4 id="summary-balance" class="font-mono text-xl sm:text-3xl font-extrabold text-indigo-600 mt-0.5 sm:mt-1 break-all transition-all">Rp 0</h4>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Saldo Saat Ini</p>
-                        <h4 id="summary-balance" class="font-mono text-2xl sm:text-3xl font-extrabold text-indigo-600 mt-1 break-all">Rp 0</h4>
+                    <div id="saldo-tagline" class="hidden sm:flex text-right flex-col justify-center text-xs text-slate-400 font-medium">
+                        <span class="uppercase tracking-widest text-[10px] text-indigo-500 font-bold">Gunung Tua Ledger Live</span>
+                        <span class="mt-1">Pencatatan kas aman, transparan & real-time</span>
                     </div>
-                </div>
-                <div class="hidden sm:flex text-right flex-col justify-center text-xs text-slate-400 font-medium">
-                    <span class="uppercase tracking-widest text-[10px] text-indigo-500 font-bold">Gunung Tua Ledger Live</span>
-                    <span class="mt-1">Pencatatan kas aman, transparan & real-time</span>
                 </div>
             </div>
 
@@ -253,25 +312,58 @@
             </div>
 
             <!-- DEBTS PANEL (Full Width when Active, hidden in dashboard standard view) -->
-            <div id="debts-panel" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-8 space-y-6 print-card">
-                <!-- Summary of Outstanding Balances per Source/Mitra (Sisa Utang) -->
-                <div id="debt-summary-container" class="hidden space-y-3 pb-3 border-b border-slate-100">
-                    <div class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest flex items-center gap-1.5 px-0.5">
-                        <span class="material-symbols-outlined text-xs">account_balance</span>
-                        Sisa Utang Aktif per Mitra / Sumber Utang
-                    </div>
-                    <div id="debt-summary-sources" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <!-- Rendered dynamically -->
+            <div id="debts-panel" class="hidden flex flex-col space-y-4">
+                
+                <!-- Filter Sumber Utang Button Chips -->
+                <div class="no-print flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-none">
+                    <button onclick="selectDebtSource('SEMUA')" id="debt-source-semua" class="debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-rose-600 text-white shadow-sm border border-rose-600">
+                        Semua Sumber
+                    </button>
+                    <div id="debt-summary-sources" class="flex items-center space-x-2">
+                        <!-- Sources rendered dynamically -->
                     </div>
                 </div>
 
-                <div id="debt-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Debts rendered dynamically -->
+                <!-- Summary Cards Row (Sisa Hutang & Total Tertagih) -->
+                <div id="debt-summary-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white rounded-2xl p-5 border border-rose-100 shadow-sm flex items-center space-x-4 bg-gradient-to-br from-rose-50/40 to-white">
+                        <div class="bg-rose-600 text-white p-3 rounded-xl shadow-md shadow-rose-600/20">
+                            <span class="material-symbols-outlined text-2xl">trending_down</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-rose-500">Sisa Tanggungan Utang</span>
+                            <h4 id="debt-summary-unpaid" class="font-mono text-xl sm:text-2xl font-extrabold text-rose-700 mt-0.5">Rp 0</h4>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm flex items-center space-x-4 bg-gradient-to-br from-emerald-50/40 to-white">
+                        <div class="bg-emerald-600 text-white p-3 rounded-xl shadow-md shadow-emerald-600/20">
+                            <span class="material-symbols-outlined text-2xl">check_circle</span>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Total Pembayaran Utang</span>
+                            <h4 id="debt-summary-paid" class="font-mono text-xl sm:text-2xl font-extrabold text-emerald-700 mt-0.5">Rp 0</h4>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="debt-empty-state" class="hidden py-16 text-center">
-                    <span class="material-symbols-outlined text-slate-300 text-5xl">done_all</span>
-                    <p class="text-sm font-semibold text-slate-500 mt-2">Tidak ada hutang atau piutang yang tercatat saat ini.</p>
+                <!-- Debt Records List Container -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden flex flex-col print-card">
+                    <div class="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+                        <div>
+                            <h3 class="font-display font-bold text-base sm:text-lg text-slate-800">Catatan Buku Hutang</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Riwayat penambahan utang dan angsuran pembayaran</p>
+                        </div>
+                    </div>
+
+                    <div id="debt-list" class="divide-y divide-slate-100">
+                        <!-- Debt items rendered here -->
+                    </div>
+
+                    <div id="debt-empty-state" class="hidden py-16 text-center">
+                        <span class="material-symbols-outlined text-slate-300 text-4xl">receipt_long</span>
+                        <p class="text-sm font-medium text-slate-500 mt-2">Belum ada catatan buku hutang.</p>
+                    </div>
                 </div>
             </div>
 
@@ -279,96 +371,101 @@
 
     </main>
 
-    <!-- Footer Copyright -->
-    <footer class="bg-slate-900 border-t border-slate-800 text-slate-500 py-6 text-center text-xs mt-12 no-print">
-        <div class="max-w-7xl mx-auto px-4">
-            <p>© 2026 Buku Kas Gunung Tua. Hak Cipta dilindungi undang-undang.</p>
-        </div>
-    </footer>
-
-    <!-- Logic Engine -->
+    <!-- Interactive Script -->
     <script>
-        // Global State variables
+        const KVDB_BASE = 'https://kvdb.io/4y9y41G4qA7tA45qVbH44E/';
+        let activeKey = null;
         let appData = null;
         let selectedTabId = null;
-        let selectedDebtSource = null;
-        const bucket = "RfEjmENYvyNAh2yFPxePkt";
+        let selectedDebtSource = 'SEMUA';
+        let pollTimer = null;
 
-        // Extract key from URL params
-        function getQueryParam(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
-        }
-
-        // Auto load on start
+        // Auto load key from query params or localStorage
         window.addEventListener('DOMContentLoaded', () => {
-            const id = getQueryParam('id') || getQueryParam('key');
-            if (id) {
-                document.getElementById('db-id').innerText = id;
-                fetchCloudData(id);
-                // Set up real-time sync polling every 4 seconds (runs only when the browser tab is active/visible)
-                setInterval(() => {
-                    if (!document.hidden) {
-                        pollCloudData(id);
-                    }
-                }, 4000);
+            const urlParams = new URLSearchParams(window.location.search);
+            const keyFromUrl = urlParams.get('key') || urlParams.get('id');
+
+            if (keyFromUrl) {
+                activeKey = keyFromUrl.trim();
+                localStorage.setItem('gunung_tua_kas_key', activeKey);
             } else {
-                showNoKeyView();
+                activeKey = localStorage.getItem('gunung_tua_kas_key');
+            }
+
+            if (activeKey) {
+                document.getElementById('manual-key-input').value = activeKey;
+                fetchCloudData(activeKey);
+                startPolling(activeKey);
+            } else {
+                document.getElementById('loading-view').classList.add('hidden');
+                document.getElementById('nokey-view').classList.remove('hidden');
             }
         });
 
-        function showNoKeyView() {
-            document.getElementById('loading-view').classList.add('hidden');
-            document.getElementById('nokey-view').classList.remove('hidden');
+        function saveManualKey() {
+            const input = document.getElementById('manual-key-input').value.trim();
+            if (!input) return;
+            activeKey = input;
+            localStorage.setItem('gunung_tua_kas_key', activeKey);
+            
+            document.getElementById('nokey-view').classList.add('hidden');
+            document.getElementById('loading-view').classList.remove('hidden');
+            
+            fetchCloudData(activeKey);
+            startPolling(activeKey);
         }
 
-        // Buka manual key
-        function loadManualKey() {
-            const key = document.getElementById('manual-key').value.trim();
-            if (key) {
-                window.location.search = `?id=${key}`;
-            }
-        }
-
-        // Fetch data from KVDB
         async function fetchCloudData(key) {
-            const url = `https://kvdb.io/${bucket}/${key}?_cb=${Date.now()}`;
             try {
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error('Gagal mengunduh data pembukuan. Periksa kembali kode database Anda.');
+                const response = await fetch(`${KVDB_BASE}${key}?t=${Date.now()}`, {
+                    cache: 'no-store'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    appData = data;
+                    renderWebsite(key);
+                } else if (response.status === 404) {
+                    showError('Kode laman web tidak ditemukan di server. Pastikan Anda sudah mengaktifkan Sinkronisasi Laman Web di aplikasi Android.');
+                } else {
+                    showError('Gagal mengambil data dari server (' + response.status + ').');
                 }
-                appData = await response.json();
-                renderWebsite(key);
             } catch (err) {
                 console.error(err);
-                document.getElementById('loading-view').innerHTML = `
-                    <div class="max-w-md mx-auto bg-white rounded-xl border border-slate-200 p-6 shadow-md">
-                        <span class="material-symbols-outlined text-red-500 text-5xl mb-2">error</span>
-                        <h3 class="font-display font-bold text-lg text-slate-800">Tautan Pengaksesan Gagal</h3>
-                        <p class="text-sm text-slate-500 mt-2">${err.message}</p>
-                        <button onclick="window.location.reload()" class="mt-4 bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold">Coba Lagi</button>
-                    </div>
-                `;
+                showError('Koneksi internet bermasalah. Mencoba menghubungkan kembali...');
             }
         }
 
-        // Silent polling to sync updates in real-time without layout flicker
+        function showError(msg) {
+            document.getElementById('loading-view').classList.add('hidden');
+            document.getElementById('nokey-view').classList.remove('hidden');
+            alert(msg);
+        }
+
+        function startPolling(key) {
+            if (pollTimer) clearInterval(pollTimer);
+            // Polling every 4 seconds for real-time live sync
+            pollTimer = setInterval(() => {
+                pollCloudData(key);
+            }, 4000);
+        }
+
         async function pollCloudData(key) {
-            const url = `https://kvdb.io/${bucket}/${key}?_cb=${Date.now()}`;
             try {
-                const response = await fetch(url);
+                const response = await fetch(`${KVDB_BASE}${key}?t=${Date.now()}`, {
+                    cache: 'no-store'
+                });
                 if (response.ok) {
-                    const newData = await response.json();
-                    // Detect delta changes to prevent redundant render or state reset
-                    if (!appData || JSON.stringify(newData) !== JSON.stringify(appData)) {
-                        appData = newData;
-                        // Keep selected tab if valid
-                        if (appData.tabs && appData.tabs.length > 0) {
-                            if (!selectedTabId || (!appData.tabs.some(t => t.id === selectedTabId) && selectedTabId !== 'HUTANG_PIUTANG')) {
-                                Math.min(0);
-                                selectedTabId = appData.tabs[0].id;
-                            }
+                    const data = await response.json();
+                    // Compare updated timestamp
+                    if (!appData || (data.updatedAt && data.updatedAt !== appData.updatedAt)) {
+                        appData = data;
+                        document.getElementById('update-time').innerText = formatDate(appData.updatedAt || Date.now());
+                        
+                        // Preserve selected tab if still valid
+                        const tabExists = appData.tabs && appData.tabs.some(t => t.id === selectedTabId);
+                        if (!tabExists && selectedTabId !== 'HUTANG_PIUTANG') {
+                            selectedTabId = appData.tabs && appData.tabs[0] ? appData.tabs[0].id : null;
                         }
                         renderTabs();
                         if (selectedTabId === 'HUTANG_PIUTANG') {
@@ -423,11 +520,13 @@
             const container = document.getElementById('tab-bar-container');
             container.innerHTML = '';
 
+            if (!appData || !appData.tabs) return;
+
             appData.tabs.forEach(tab => {
                 const btn = document.createElement('button');
                 btn.className = `flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border text-[11px] sm:text-xs font-bold transition-all duration-200 whitespace-nowrap snap-center shrink-0 ${
-                    tab.id === selectedTabId 
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10 scale-[1.01] tab-btn-active' 
+                    selectedTabId === tab.id 
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-600/10 scale-[1.01] tab-btn-active' 
                     : 'bg-white border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300 hover:bg-slate-50'
                 }`;
                 btn.onclick = () => selectTab(tab.id, tab.name);
@@ -474,12 +573,12 @@
             renderTabs();
             
             if (id === 'HUTANG_PIUTANG') {
-                document.getElementById('saldo-box-container').classList.add('hidden');
+                document.getElementById('sticky-header-zone').classList.add('hidden');
                 document.getElementById('transactions-panel').classList.add('hidden');
                 document.getElementById('debts-panel').classList.remove('hidden');
                 renderDebts();
             } else {
-                document.getElementById('saldo-box-container').classList.remove('hidden');
+                document.getElementById('sticky-header-zone').classList.remove('hidden');
                 document.getElementById('transactions-panel').classList.remove('hidden');
                 document.getElementById('debts-panel').classList.add('hidden');
                 renderSummariesAndRecords();
@@ -515,10 +614,10 @@
 
             // Save structured transactions to global for filtering search later
             window.activeTxsSource = [...structuredTxs]; // oldest first for display
-            applyFilters();
+            applyFilters(true); // pass true to trigger auto-scroll to latest transaction
         }
 
-         function applyFilters() {
+         function applyFilters(shouldScroll = false) {
             const query = document.getElementById('tx-search').value.toLowerCase().trim();
             const container = document.getElementById('tx-table-body');
             const emptyState = document.getElementById('tx-empty-state');
@@ -589,6 +688,16 @@
                 `;
                 container.appendChild(tr);
             });
+
+            // Auto-scroll directly to the newest transaction (bottom) on tab change / initial load
+            if (shouldScroll && filtered.length > 0) {
+                setTimeout(() => {
+                    const rows = container.getElementsByTagName('tr');
+                    if (rows.length > 0) {
+                        rows[rows.length - 1].scrollIntoView({ behavior: 'smooth', block: 'end' });
+                    }
+                }, 100);
+            }
         }
 
         function selectDebtSource(src) {
@@ -616,90 +725,72 @@
                 summaryContainer.classList.remove('hidden');
             }
 
-            // Calculate running balance per source chronologically (oldest first)
-            const sourceBalances = {};
-            const sortedChain = [...debts].sort((a, b) => a.timestamp - b.timestamp);
-            const txRunningBalances = {};
-            const txShowDueDate = {};
-
-            sortedChain.forEach(d => {
-                const src = d.source || "Tidak Diketahui";
-                const previousBalance = sourceBalances[src] || 0;
-                
-                if (d.type === 'HUTANG') {
-                    if (previousBalance === 0) {
-                        txShowDueDate[d.id] = true;
-                    } else {
-                        txShowDueDate[d.id] = false;
-                    }
-                    sourceBalances[src] = previousBalance + d.amount;
-                } else {
-                    txShowDueDate[d.id] = false;
-                    sourceBalances[src] = Math.max(0, previousBalance - d.amount);
-                }
-                txRunningBalances[d.id] = sourceBalances[src];
-            });
-
-            const uniqueSources = Object.keys(sourceBalances).sort();
-
-            // Auto-select first source if none is selected, or if selected source no longer exists
-            if (uniqueSources.length > 0) {
-                if (!selectedDebtSource || !uniqueSources.includes(selectedDebtSource)) {
-                    selectedDebtSource = uniqueSources[0];
-                }
+            // Extract unique debt sources
+            const uniqueSources = [...new Set(debts.map(d => d.sourceTabName || 'Umum'))];
+            
+            // Render Source Filter Buttons
+            const semuaBtn = document.getElementById('debt-source-semua');
+            if (selectedDebtSource === 'SEMUA') {
+                semuaBtn.className = 'debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-rose-600 text-white shadow-sm border border-rose-600';
             } else {
-                selectedDebtSource = null;
+                semuaBtn.className = 'debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-white text-slate-600 border border-slate-200 hover:bg-slate-50';
             }
 
-            // Render top summary of outstanding balances per Source/Mitra
             uniqueSources.forEach(src => {
-                const balance = sourceBalances[src];
-                const card = document.createElement('div');
-                const isSelected = src === selectedDebtSource;
-                
-                const activeStateClass = isSelected 
-                     ? 'ring-2 ring-indigo-600 bg-indigo-50 border-indigo-300 scale-[1.01]' 
-                    : 'hover:bg-slate-50 border-slate-200 bg-white';
-
-                card.className = `${activeStateClass} border rounded-xl p-3 sm:p-3.5 flex flex-col justify-between transition-all duration-150 cursor-pointer shadow-sm`;
-                card.onclick = () => selectDebtSource(src);
-                
-                if (balance > 0) {
-                    card.innerHTML = `
-                        <div class="flex items-center justify-between gap-1">
-                            <span class="font-extrabold text-slate-800 text-xs sm:text-sm truncate max-w-[130px]">${src}</span>
-                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-amber-100 text-amber-800">BELUM LUNAS</span>
-                        </div>
-                        <div class="mt-2 flex flex-col">
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
-                            <span class="font-mono font-extrabold text-amber-700 text-sm sm:text-base mt-0.5">${formatRupiah(balance)}</span>
-                        </div>
-                    `;
-                } else {
-                    card.innerHTML = `
-                        <div class="flex items-center justify-between gap-1">
-                            <span class="font-extrabold text-slate-505 text-xs sm:text-sm truncate max-w-[130px]">${src}</span>
-                            <span class="px-2 py-0.5 rounded-full text-[8px] font-black bg-emerald-100 text-emerald-800 uppercase tracking-wider">LUNAS</span>
-                        </div>
-                        <div class="mt-2 flex flex-col">
-                            <span class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Sisa Utang Aktif</span>
-                            <span class="font-mono font-bold text-slate-400 text-xs sm:text-sm mt-0.5">Rp 0 (Lunas)</span>
-                        </div>
-                    `;
-                }
-                summarySources.appendChild(card);
+                const btn = document.createElement('button');
+                const isSelected = selectedDebtSource === src;
+                btn.className = `debt-source-chip px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                    isSelected 
+                    ? 'bg-rose-600 text-white shadow-sm border border-rose-600' 
+                    : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+                }`;
+                btn.innerText = src;
+                btn.onclick = () => selectDebtSource(src);
+                summarySources.appendChild(btn);
             });
 
-            // Display filtered transactions in chronological order: oldest first
-            const filteredDebts = debts.filter(d => (d.source || "Tidak Diketahui") === selectedDebtSource);
-            filteredDebts.sort((a,b) => a.timestamp - b.timestamp);
+            // Calculate overall or per-source running debt balance
+            let filteredDebts = debts;
+            if (selectedDebtSource !== 'SEMUA') {
+                filteredDebts = debts.filter(d => (d.sourceTabName || 'Umum') === selectedDebtSource);
+            }
+
+            // Sort chronological (oldest to newest)
+            filteredDebts.sort((a, b) => a.timestamp - b.timestamp);
+
+            let totalDebtAdded = 0;
+            let totalDebtPaid = 0;
+
+            // Track due date display
+            let runningBalance = 0;
+            const txShowDueDate = {};
 
             filteredDebts.forEach(d => {
-                const item = document.createElement('div');
-                item.className = 'bg-slate-50 hover:bg-slate-100/70 border border-slate-100 rounded-2xl p-4 flex flex-col space-y-2 transition-all duration-200';
+                const isPiutang = d.type === 'PIUTANG'; // Repayment
+                if (isPiutang) {
+                    totalDebtPaid += d.amount;
+                    runningBalance -= d.amount;
+                } else {
+                    totalDebtAdded += d.amount;
+                    if (runningBalance <= 0) {
+                        txShowDueDate[d.id] = true;
+                    }
+                    runningBalance += d.amount;
+                }
+            });
 
-                const isPiutang = d.type === 'PIUTANG'; // we lend back, meaning a payment/repayment
-                const typeText = isPiutang ? 'PEMBAYARAN UTANG' : 'TAMBAH UTANG';
+            const netDebtRemaining = Math.max(0, totalDebtAdded - totalDebtPaid);
+
+            document.getElementById('debt-summary-unpaid').innerText = formatRupiah(netDebtRemaining);
+            document.getElementById('debt-summary-paid').innerText = formatRupiah(totalDebtPaid);
+
+            // Render Debt Items
+            filteredDebts.forEach(d => {
+                const item = document.createElement('div');
+                item.className = 'p-4 sm:p-5 hover:bg-slate-50 transition-colors duration-150';
+
+                const isPiutang = d.type === 'PIUTANG';
+                const typeText = isPiutang ? 'Bayar Utang' : 'Tambah Utang';
                 const typeColor = isPiutang ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100';
                 
                 const isLunas = d.status === 'LUNAS';
@@ -737,6 +828,61 @@
                 container.appendChild(item);
             });
         }
+
+        // Scroll event listener to shrink/expand saldo card smoothly
+        window.addEventListener('scroll', () => {
+            const stickyZone = document.getElementById('sticky-header-zone');
+            if (!stickyZone) return;
+            if (window.scrollY > 40) {
+                stickyZone.classList.add('is-scrolled');
+            } else {
+                stickyZone.classList.remove('is-scrolled');
+            }
+        }, { passive: true });
+
+        // Service Worker Registration for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered successfully with scope:', reg.scope))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+
+        // PWA Install Prompt Listener
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwa-install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent Chrome 67 and earlier from automatically showing the prompt
+            e.preventDefault();
+            // Stash the event so it can be triggered later.
+            deferredPrompt = e;
+            // Update UI notify the user they can add to home screen
+            if (installBtn) {
+                installBtn.classList.remove('hidden');
+                installBtn.classList.add('inline-flex');
+            }
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`User response to install prompt: ${outcome}`);
+                    deferredPrompt = null;
+                    installBtn.classList.add('hidden');
+                }
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            console.log('Buku Kas PWA was installed successfully');
+            if (installBtn) {
+                installBtn.classList.add('hidden');
+            }
+        });
     </script>
 </body>
 </html>
